@@ -6,6 +6,55 @@ test('开发服务器能够打开应用', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Vocabulary', exact: true })).toBeVisible()
 })
 
+test('移动端表单、长词条、键盘取消及桌面布局', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await page.goto('/')
+  await page.getByRole('button', { name: '＋ 添加词条' }).click()
+  await page.getByLabel('英文词汇 / 短语').fill('electromagnetic interference and signal integrity')
+  await page.getByLabel('中文释义').fill('电磁干扰与信号完整性')
+  await page.getByLabel('备注').fill('英文论文阅读中的测试词条')
+  await page.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(page.getByRole('article')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.getByRole('article').getByRole('button', { name: '编辑', exact: true }).click()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.screenshot({ path: '.tools/mobile.png', fullPage: true })
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.screenshot({ path: '.tools/desktop.png', fullPage: true })
+})
+
+test('存储初始化失败给出可读提示与重试', async ({ page }) => {
+  await page.addInitScript(() => {
+    const open = IDBFactory.prototype.open
+    IDBFactory.prototype.open = function (name, version) {
+      if (localStorage.getItem('allow-storage') !== 'yes') throw new DOMException('blocked', 'SecurityError')
+      return open.call(this, name, version)
+    }
+  })
+  await page.goto('/')
+  await expect(page.getByRole('alert')).toContainText('无法读取本地词库')
+  await expect(page.getByRole('button', { name: '重试', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '＋ 添加词条' })).toBeDisabled()
+  await page.evaluate(() => localStorage.setItem('allow-storage', 'yes'))
+  await page.getByRole('button', { name: '重试', exact: true }).click()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '＋ 添加词条' })).toBeEnabled()
+})
+
+test('写入失败保留表单内容并明确提示', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '＋ 添加词条' }).click()
+  await page.getByLabel('英文词汇 / 短语').fill('substrate')
+  await page.getByLabel('中文释义').fill('衬底')
+  await page.evaluate(() => { IDBObjectStore.prototype.add = () => { throw new DOMException('full', 'QuotaExceededError') } })
+  await page.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('保存失败')
+  await expect(page.getByLabel('英文词汇 / 短语')).toHaveValue('substrate')
+  await expect(page.getByRole('article')).toHaveCount(0)
+})
+
 test('JSON 下载、删除后恢复、重复导入和非法数据处理', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: '＋ 添加词条' }).click()

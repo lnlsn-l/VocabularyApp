@@ -20,8 +20,13 @@ export class LocalVocabularyRepository implements VocabularyRepository {
   async list() { return (await this.db.vocabulary.toArray()).map(toEntry) }
 
   subscribe(next: (entries: VocabularyEntry[]) => void, error: () => void) {
-    const subscription = liveQuery(() => this.list()).subscribe({ next, error })
-    return () => subscription.unsubscribe()
+    let cancelled = false
+    let subscription: { unsubscribe(): void } | undefined
+    // 显式捕获初始化错误，避免 liveQuery 等待数据库恢复时一直停在加载状态。
+    void this.db.open().then(() => {
+      if (!cancelled) subscription = liveQuery(() => this.list()).subscribe({ next, error })
+    }).catch(() => { if (!cancelled) error() })
+    return () => { cancelled = true; subscription?.unsubscribe() }
   }
 
   private async assertUnique(word: string, exceptId?: string) {

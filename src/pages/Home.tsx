@@ -49,7 +49,7 @@ export function Home() {
   }
 
   return <main>
-    <header className="page-header"><div><p className="eyebrow">个人专业词库</p><h1>Vocabulary</h1>
+    <header className="page-header"><div><p className="eyebrow"><span className="brand-mark" aria-hidden="true">V</span> 个人专业词库</p><h1>Vocabulary</h1>
       <p className="subtitle">让每一次阅读，都成为下一次的积累。</p></div>
       <button className="primary" disabled={loading || !!error} onClick={() => setForm({})}>＋ 添加词条</button>
     </header>
@@ -70,13 +70,16 @@ export function Home() {
         <option value="viewed">最近查看</option><option value="count">查看次数最多</option>
       </select></div>
       {loading ? <p role="status">正在读取本地词库…</p> : !error && (visible.length ?
-        <WordList entries={visible} busy={busy} onEdit={entry => setForm({ entry })} onDelete={setDeleting} onOpen={entry => void open(entry.id)}
+        <WordList entries={visible} busy={busy} onEdit={entry => setForm({ entry })} onDelete={entry => { setActionError(''); setDeleting(entry) }} onOpen={entry => void open(entry.id)}
           onStatus={entry => void run(() => vocabularyService.setStatus(entry.id, entry.status === 'learning' ? 'mastered' : 'learning'), '学习状态已更新。')} /> :
-        <div className="empty-state"><h3>{entries.length ? '没有找到匹配的词条' : '从阅读中遇到的第一个词开始'}</h3><p>添加英文词汇、术语或短语，写下属于你的中文释义。</p>
-          <button onClick={() => setForm({})}>添加第一个词条</button></div>)}
+        <div className="empty-state"><span className="empty-icon" aria-hidden="true">Aa</span>
+          <h3>{entries.length ? '没有找到匹配的词条' : '从阅读中遇到的第一个词开始'}</h3><p>{entries.length ? '试试其他关键词，或清除字母和状态筛选。' : '添加英文词汇、术语或短语，写下属于你的中文释义。'}</p>
+          <div className="empty-actions">{entries.length > 0 && <button onClick={clearFilters}>清除筛选</button>}
+            <button className="primary" onClick={() => setForm({})}>{entries.length ? '添加词条' : '添加第一个词条'}</button></div></div>)}
     </section>
+    <footer><span>为英文文献阅读而积累。</span><span>数据保存在此浏览器，请定期导出备份。</span></footer>
     {form && <WordForm key={form.entry?.id ?? 'new'} entry={form.entry} initialWord={/^[\x20-\x7e]+$/.test(query) ? query.trim() : ''} onClose={() => setForm(null)} onSave={save} onExisting={id => void open(id)} />}
     {detail && <WordDetail entry={detail} onClose={() => setDetailId(null)} onEdit={() => { setDetailId(null); setForm({ entry: detail }) }} />}
-    {deleting && <ConfirmDialog word={deleting.word} busy={busy} onClose={() => setDeleting(null)} onConfirm={() => void remove()} />}
+    {deleting && <ConfirmDialog word={deleting.word} busy={busy} error={actionError} onClose={() => { setDeleting(null); setActionError('') }} onConfirm={() => void remove()} />}
   </main>
 }
