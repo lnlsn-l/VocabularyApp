@@ -145,6 +145,8 @@ git push origin main
 
 目标仓库为当前 GitHub 账号下的 **VocabularyApp，Private 私有仓库**。仓库只保存程序代码和配置，不自动备份词库。`.gitignore` 排除 `node_modules/`、`dist/`、`.env`、`.env.*`、`backups/`、日志、临时文件、IDE 缓存和测试产物。不要使用 `git add -f` 提交个人备份或密钥。
 
+已创建并推送：[lnlsn-l/VocabularyApp](https://github.com/lnlsn-l/VocabularyApp)。`origin` 为 `https://github.com/lnlsn-l/VocabularyApp.git`，默认分支 `main`，已验证远端 Private 属性和文件清单。完整交付信息见 [docs/delivery-report.md](docs/delivery-report.md)。
+
 如果 `gh` 不在 PATH，本机可用完整路径调用：`& 'C:\Program Files\GitHub CLI\gh.exe' --version`。登录和授权由用户自行完成，不在文件或 Git 中保存 Token。创建仓库时不额外生成 README、gitignore 或 License。
 
 ## 后续版本
