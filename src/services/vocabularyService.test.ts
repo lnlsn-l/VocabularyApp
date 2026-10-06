@@ -13,6 +13,16 @@ function setup() {
 afterEach(async () => { await Promise.all(databases.splice(0).map(db => db.delete())) })
 
 describe('本地词库数据层', () => {
+  it('只在显式查看时记录次数，并发查看不丢计数', async () => {
+    const { service } = setup()
+    await service.create({ word: 'substrate', meaning: '衬底', note: '', status: 'learning' })
+    const [entry] = await service.list()
+    await service.list()
+    expect((await service.list())[0].searchCount).toBe(0)
+    await Promise.all([service.recordView(entry.id), service.recordView(entry.id)])
+    expect((await service.list())[0]).toMatchObject({ searchCount: 2, updatedAt: entry.updatedAt })
+    expect((await service.list())[0].lastSearchedAt).toBeTruthy()
+  })
   it('关闭并重新打开数据库仍可读取词条，默认统计为零', async () => {
     const { db, service } = setup()
     await service.create({ word: ' substrate ', meaning: ' 衬底 ', note: '', status: 'learning' })

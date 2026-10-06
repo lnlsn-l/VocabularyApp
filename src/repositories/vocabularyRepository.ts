@@ -7,5 +7,6 @@ export interface VocabularyRepository {
   update(id: string, input: VocabularyInput, now: string): Promise<void>
   setStatus(id: string, status: VocabularyStatus, now: string): Promise<void>
   remove(id: string): Promise<void>
+  recordView(id: string, now: string): Promise<void>
   merge(entries: VocabularyEntry[]): Promise<Omit<ImportResult, 'invalid'>>
 }

@@ -66,6 +66,13 @@ export class LocalVocabularyRepository implements VocabularyRepository {
     })
   }
 
+  async recordView(id: string, now: string) {
+    await this.db.transaction('rw', this.db.vocabulary, async () => {
+      const row = await this.requireEntry(id)
+      await this.db.vocabulary.update(id, { searchCount: row.searchCount + 1, lastSearchedAt: now })
+    })
+  }
+
   async merge(entries: VocabularyEntry[]) {
     return this.db.transaction('rw', this.db.vocabulary, async () => {
       const existing = await this.db.vocabulary.toArray()

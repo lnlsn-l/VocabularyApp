@@ -43,6 +43,10 @@ export class VocabularyService {
   remove(id: string) {
     return this.perform(() => this.repository.remove(id), '删除失败，请重试。')
   }
+
+  recordView(id: string) {
+    return this.perform(() => this.repository.recordView(id, new Date().toISOString()), '查看记录保存失败，请重试。')
+  }
 }
 
 export const vocabularyService = new VocabularyService(new LocalVocabularyRepository())

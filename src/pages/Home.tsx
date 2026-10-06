@@ -5,6 +5,7 @@ import { AlphabetNav } from '../components/AlphabetNav'
 import { StatusFilter } from '../components/StatusFilter'
 import { WordForm } from '../components/WordForm'
 import { WordList } from '../components/WordList'
+import { WordDetail } from '../components/WordDetail'
 import { useVocabulary } from '../hooks/useVocabulary'
 import { vocabularyService } from '../services/vocabularyService'
 import type { VocabularyEntry, VocabularyInput } from '../types/vocabulary'
@@ -22,6 +23,8 @@ export function Home() {
   const [status, setStatus] = useState<StatusFilterValue>('learning')
   const [letter, setLetter] = useState('all')
   const [sort, setSort] = useState<SortValue>('alphabet')
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const detail = entries.find(entry => entry.id === detailId)
   const visible = filterEntries(entries, query, status, letter, sort)
   function clearFilters() { setQuery(''); setStatus('all'); setLetter('all') }
 
@@ -40,9 +43,8 @@ export function Home() {
   async function remove() {
     if (deleting && await run(() => vocabularyService.remove(deleting.id), '词条已永久删除。')) setDeleting(null)
   }
-  function existing(id: string) {
-    const entry = entries.find(row => row.id === id)
-    if (entry) setForm({ entry })
+  async function open(id: string) {
+    if (await run(() => vocabularyService.recordView(id), '')) { setForm(null); setDetailId(id) }
   }
 
   return <main>
@@ -66,12 +68,13 @@ export function Home() {
         <option value="viewed">最近查看</option><option value="count">查看次数最多</option>
       </select></div>
       {loading ? <p role="status">正在读取本地词库…</p> : !error && (visible.length ?
-        <WordList entries={visible} busy={busy} onEdit={entry => setForm({ entry })} onDelete={setDeleting}
+        <WordList entries={visible} busy={busy} onEdit={entry => setForm({ entry })} onDelete={setDeleting} onOpen={entry => void open(entry.id)}
           onStatus={entry => void run(() => vocabularyService.setStatus(entry.id, entry.status === 'learning' ? 'mastered' : 'learning'), '学习状态已更新。')} /> :
         <div className="empty-state"><h3>{entries.length ? '没有找到匹配的词条' : '从阅读中遇到的第一个词开始'}</h3><p>添加英文词汇、术语或短语，写下属于你的中文释义。</p>
           <button onClick={() => setForm({})}>添加第一个词条</button></div>)}
     </section>
-    {form && <WordForm key={form.entry?.id ?? 'new'} entry={form.entry} initialWord={/^[\x20-\x7e]+$/.test(query) ? query.trim() : ''} onClose={() => setForm(null)} onSave={save} onExisting={existing} />}
+    {form && <WordForm key={form.entry?.id ?? 'new'} entry={form.entry} initialWord={/^[\x20-\x7e]+$/.test(query) ? query.trim() : ''} onClose={() => setForm(null)} onSave={save} onExisting={id => void open(id)} />}
+    {detail && <WordDetail entry={detail} onClose={() => setDetailId(null)} onEdit={() => { setDetailId(null); setForm({ entry: detail }) }} />}
     {deleting && <ConfirmDialog word={deleting.word} busy={busy} onClose={() => setDeleting(null)} onConfirm={() => void remove()} />}
   </main>
 }

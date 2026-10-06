@@ -31,3 +31,10 @@ button[aria-pressed="true"] { background: #245b48; color: white; border-color: #
 .list-header select { width: auto; }
 .list-header { margin: 32px 0 20px; }
 .list-header h2 { display: inline; margin-right: 16px; font-size: 20px; }
+.word-title { background: none; border: 0; padding: 0; text-align: left; color: #245b48; font-size: 21px; font-weight: 650; }
+.view-count { margin-left: 12px; color: #79867c; font-size: 12px; }
+.detail-meaning { font-size: 22px; white-space: pre-wrap; }
+.detail-note { background: #f5f7f3; border-radius: 10px; padding: 12px 16px; }
+.detail-note p { white-space: pre-wrap; }
+.detail-meta div { display: flex; justify-content: space-between; gap: 16px; margin-top: 10px; font-size: 13px; }
+.detail-meta dt { color: #6b786e; }

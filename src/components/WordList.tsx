@@ -6,8 +6,9 @@ interface Props {
   onEdit: (entry: VocabularyEntry) => void
   onStatus: (entry: VocabularyEntry) => void
   onDelete: (entry: VocabularyEntry) => void
+  onOpen: (entry: VocabularyEntry) => void
 }
-export function WordList({ entries, busy, onEdit, onStatus, onDelete }: Props) {
+export function WordList({ entries, busy, onEdit, onStatus, onDelete, onOpen }: Props) {
   return <div className="word-list">{entries.map(entry => <WordCard key={entry.id} entry={entry} busy={busy}
-    onEdit={() => onEdit(entry)} onStatus={() => onStatus(entry)} onDelete={() => onDelete(entry)} />)}</div>
+    onEdit={() => onEdit(entry)} onStatus={() => onStatus(entry)} onDelete={() => onDelete(entry)} onOpen={() => onOpen(entry)} />)}</div>
 }
