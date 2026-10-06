@@ -1,3 +1,23 @@
 :root { font-family: system-ui, sans-serif; color: #20332c; background: #f7f8f5; }
 body { margin: 0; }
 main { max-width: 1120px; margin: 48px auto; padding: 24px; }
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; padding: 8px 14px; background: white; border: 1px solid #d5ddd7; border-radius: 8px; }
+button:disabled { cursor: wait; opacity: .55; }
+.primary { background: #245b48; color: white; border-color: #245b48; }
+.page-header, .list-header, .word-card, .modal-header, .modal-actions { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.word-card { background: white; border: 1px solid #dce2dc; border-radius: 12px; padding: 24px; margin-bottom: 12px; }
+.word-actions { display: flex; gap: 8px; margin-top: 12px; }
+.badge { background: #e9f1e9; padding: 5px 10px; border-radius: 16px; font-size: 13px; }
+.muted, .subtitle, .storage-note, .note-summary { color: #6b786e; }
+.danger { background: #a83c3c; color: white; border-color: #a83c3c; }
+.text-danger, .required { color: #a83c3c; }
+.error-banner, .form-error { color: #973737; background: #fff0ef; padding: 12px; border-radius: 8px; }
+.empty-state { text-align: center; padding: 60px 20px; }
+dialog { width: min(520px, calc(100vw - 64px)); border: 0; border-radius: 16px; padding: 28px; }
+dialog::backdrop { background: #162a2266; }
+fieldset { border: 0; padding: 0; margin: 0; }
+label { display: block; margin: 16px 0; }
+input, textarea, select { display: block; box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #c7d2ca; border-radius: 8px; margin-top: 8px; }
+.modal-actions { justify-content: flex-end; margin-top: 24px; }
+.optional { color: #79867c; font-size: 12px; }

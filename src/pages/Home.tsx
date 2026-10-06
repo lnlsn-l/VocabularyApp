@@ -1,0 +1,59 @@
+import { useState } from 'react'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { WordForm } from '../components/WordForm'
+import { WordList } from '../components/WordList'
+import { useVocabulary } from '../hooks/useVocabulary'
+import { vocabularyService } from '../services/vocabularyService'
+import type { VocabularyEntry, VocabularyInput } from '../types/vocabulary'
+import { errorMessage } from '../utils/validation'
+
+export function Home() {
+  const { entries, loading, error, retry } = useVocabulary()
+  const [form, setForm] = useState<{ entry?: VocabularyEntry } | null>(null)
+  const [deleting, setDeleting] = useState<VocabularyEntry | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [actionError, setActionError] = useState('')
+
+  async function run(action: () => Promise<void>, message: string) {
+    if (busy) return false
+    setBusy(true); setActionError('')
+    try { await action(); setNotice(message); return true }
+    catch (cause) { setActionError(errorMessage(cause)); return false }
+    finally { setBusy(false) }
+  }
+  async function save(input: VocabularyInput) {
+    if (form?.entry) await vocabularyService.update(form.entry.id, input)
+    else await vocabularyService.create(input)
+    setNotice('词条已保存到当前浏览器。')
+  }
+  async function remove() {
+    if (deleting && await run(() => vocabularyService.remove(deleting.id), '词条已永久删除。')) setDeleting(null)
+  }
+  function existing(id: string) {
+    const entry = entries.find(row => row.id === id)
+    if (entry) setForm({ entry })
+  }
+
+  return <main>
+    <header className="page-header"><div><p className="eyebrow">个人专业词库</p><h1>Vocabulary</h1>
+      <p className="subtitle">让每一次阅读，都成为下一次的积累。</p></div>
+      <button className="primary" disabled={loading || !!error} onClick={() => setForm({})}>＋ 添加词条</button>
+    </header>
+    <p className="storage-note">本地保存 · 当前浏览器的独立词库</p>
+    <div className="feedback" aria-live="polite">{notice && <p className="notice">{notice}</p>}</div>
+    {(error || actionError) && <div className="error-banner" role="alert">{error || actionError}
+      {error && <button onClick={retry}>重试</button>}
+      {actionError && <button onClick={() => setActionError('')}>关闭提示</button>}
+    </div>}
+    <section aria-label="词库列表"><div className="list-header"><h2>我的词库</h2><span>{entries.length} 个词条</span></div>
+      {loading ? <p role="status">正在读取本地词库…</p> : !error && (entries.length ?
+        <WordList entries={entries} busy={busy} onEdit={entry => setForm({ entry })} onDelete={setDeleting}
+          onStatus={entry => void run(() => vocabularyService.setStatus(entry.id, entry.status === 'learning' ? 'mastered' : 'learning'), '学习状态已更新。')} /> :
+        <div className="empty-state"><h3>从阅读中遇到的第一个词开始</h3><p>添加英文词汇、术语或短语，写下属于你的中文释义。</p>
+          <button onClick={() => setForm({})}>添加第一个词条</button></div>)}
+    </section>
+    {form && <WordForm key={form.entry?.id ?? 'new'} entry={form.entry} onClose={() => setForm(null)} onSave={save} onExisting={existing} />}
+    {deleting && <ConfirmDialog word={deleting.word} busy={busy} onClose={() => setDeleting(null)} onConfirm={() => void remove()} />}
+  </main>
+}
