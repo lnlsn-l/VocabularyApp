@@ -6,6 +6,25 @@ test('开发服务器能够打开应用', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Vocabulary', exact: true })).toBeVisible()
 })
 
+test('关闭整个浏览器进程后重新打开，词库仍存在', async ({ playwright }, testInfo) => {
+  const profile = testInfo.outputPath('persistent-browser-profile')
+  let context = await playwright.chromium.launchPersistentContext(profile, { channel: 'chrome', headless: true })
+  try {
+    let page = await context.newPage()
+    await page.goto('http://localhost:5173')
+    await page.getByRole('button', { name: '＋ 添加词条' }).click()
+    await page.getByLabel('英文词汇 / 短语').fill('substrate')
+    await page.getByLabel('中文释义').fill('衬底')
+    await page.getByRole('button', { name: '保存', exact: true }).click()
+    await expect(page.getByRole('article', { name: 'substrate' })).toBeVisible()
+    await context.close()
+    context = await playwright.chromium.launchPersistentContext(profile, { channel: 'chrome', headless: true })
+    page = await context.newPage()
+    await page.goto('http://localhost:5173')
+    await expect(page.getByRole('article', { name: 'substrate' })).toContainText('衬底')
+  } finally { await context.close() }
+})
+
 test('移动端表单、长词条、键盘取消及桌面布局', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 })
   await page.goto('/')

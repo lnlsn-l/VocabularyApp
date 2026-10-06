@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
-import { afterEach, describe, expect, it } from 'vitest'
+import Dexie from 'dexie'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { VocabularyDatabase } from '../db/database'
 import { LocalVocabularyRepository } from '../repositories/localVocabularyRepository'
 import { VocabularyService } from './vocabularyService'
@@ -13,6 +14,23 @@ function setup() {
 afterEach(async () => { await Promise.all(databases.splice(0).map(db => db.delete())) })
 
 describe('本地词库数据层', () => {
+  it('导入中途写入失败会回滚整个事务，保留原词库', async () => {
+    const { db, service } = setup()
+    await service.create({ word: 'substrate', meaning: '衬底', note: '', status: 'learning' })
+    const [entry] = await service.list()
+    const backup = JSON.stringify({ version: 1, app: 'VocabularyApp', exportedAt: entry.createdAt, entries: [
+      { ...entry, id: 'new-a', word: 'impedance' }, { ...entry, id: 'new-b', word: 'permittivity' },
+    ] })
+    const add = db.vocabulary.add.bind(db.vocabulary)
+    let calls = 0
+    const spy = vi.spyOn(db.vocabulary, 'add').mockImplementation(row => {
+      if (++calls === 2) return Dexie.Promise.reject(new Error('模拟存储空间不足'))
+      return add(row)
+    })
+    await expect(service.importJSON(backup)).rejects.toThrow('已回滚')
+    spy.mockRestore()
+    expect(await service.list()).toEqual([entry])
+  })
   it('合并导入去重、保护旧词和 ID 冲突，重复导入不增记录', async () => {
     const { service } = setup()
     await service.create({ word: 'substrate', meaning: '原有释义', note: '', status: 'learning' })
