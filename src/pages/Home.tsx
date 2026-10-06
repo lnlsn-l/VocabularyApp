@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { SearchBar } from '../components/SearchBar'
+import { AlphabetNav } from '../components/AlphabetNav'
+import { StatusFilter } from '../components/StatusFilter'
 import { WordForm } from '../components/WordForm'
 import { WordList } from '../components/WordList'
 import { useVocabulary } from '../hooks/useVocabulary'
 import { vocabularyService } from '../services/vocabularyService'
 import type { VocabularyEntry, VocabularyInput } from '../types/vocabulary'
 import { errorMessage } from '../utils/validation'
-import { matchesSearch } from '../utils/search'
+import { filterEntries, type SortValue, type StatusFilterValue } from '../utils/search'
 
 export function Home() {
   const { entries, loading, error, retry } = useVocabulary()
@@ -17,7 +19,11 @@ export function Home() {
   const [notice, setNotice] = useState('')
   const [actionError, setActionError] = useState('')
   const [query, setQuery] = useState('')
-  const visible = entries.filter(entry => matchesSearch(entry, query))
+  const [status, setStatus] = useState<StatusFilterValue>('learning')
+  const [letter, setLetter] = useState('all')
+  const [sort, setSort] = useState<SortValue>('alphabet')
+  const visible = filterEntries(entries, query, status, letter, sort)
+  function clearFilters() { setQuery(''); setStatus('all'); setLetter('all') }
 
   async function run(action: () => Promise<void>, message: string) {
     if (busy) return false
@@ -46,12 +52,19 @@ export function Home() {
     </header>
     <p className="storage-note">本地保存 · 当前浏览器的独立词库</p>
     <SearchBar value={query} onChange={setQuery} />
+    <div className="filter-row"><StatusFilter value={status} entries={entries} onChange={setStatus} />
+      <button className="text-button" onClick={clearFilters}>清除筛选</button></div>
+    <AlphabetNav value={letter} onChange={setLetter} />
     <div className="feedback" aria-live="polite">{notice && <p className="notice">{notice}</p>}</div>
     {(error || actionError) && <div className="error-banner" role="alert">{error || actionError}
       {error && <button onClick={retry}>重试</button>}
       {actionError && <button onClick={() => setActionError('')}>关闭提示</button>}
     </div>}
-    <section aria-label="词库列表"><div className="list-header"><h2>我的词库</h2><span>{visible.length} / {entries.length} 个词条</span></div>
+    <section aria-label="词库列表"><div className="list-header"><div><h2>我的词库</h2><span>{visible.length} / {entries.length} 个词条</span></div>
+      <select aria-label="词条排序" value={sort} onChange={event => setSort(event.target.value as SortValue)}>
+        <option value="alphabet">英文 A–Z</option><option value="created">最近添加</option>
+        <option value="viewed">最近查看</option><option value="count">查看次数最多</option>
+      </select></div>
       {loading ? <p role="status">正在读取本地词库…</p> : !error && (visible.length ?
         <WordList entries={visible} busy={busy} onEdit={entry => setForm({ entry })} onDelete={setDeleting}
           onStatus={entry => void run(() => vocabularyService.setStatus(entry.id, entry.status === 'learning' ? 'mastered' : 'learning'), '学习状态已更新。')} /> :

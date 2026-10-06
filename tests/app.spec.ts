@@ -64,6 +64,8 @@ test('添加、重复检测、编辑、状态切换和删除确认', async ({ pa
   await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(card).toContainText('衬底；基板')
   await card.getByRole('button', { name: '标记已掌握' }).click()
+  await expect(card).toHaveCount(0)
+  await page.getByRole('group', { name: '学习状态筛选' }).getByRole('button', { name: '已掌握' }).click()
   await expect(card.getByText('已掌握', { exact: true })).toBeVisible()
   await card.getByRole('button', { name: '删除', exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('此操作不可撤销')
@@ -72,4 +74,25 @@ test('添加、重复检测、编辑、状态切换和删除确认', async ({ pa
   await card.getByRole('button', { name: '删除', exact: true }).click()
   await page.getByRole('button', { name: '永久删除', exact: true }).click()
   await expect(card).toHaveCount(0)
+})
+
+test('字母、非字母和学习状态组合筛选', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(async () => {
+    const path = '/src/services/vocabularyService.ts'
+    const { vocabularyService } = await import(path)
+    for (const word of ['electromagnetic interference', 'electron mobility', '3D transistor']) {
+      await vocabularyService.create({ word, meaning: '测试', note: '', status: 'learning' })
+    }
+    await vocabularyService.create({ word: 'substrate', meaning: '衬底', note: '', status: 'mastered' })
+  })
+  await page.getByRole('navigation', { name: '首字母筛选' }).getByRole('button', { name: 'E', exact: true }).click()
+  await expect(page.getByRole('article')).toHaveCount(2)
+  await page.getByRole('searchbox').fill('inter')
+  await expect(page.getByRole('article')).toHaveCount(1)
+  await page.getByRole('button', { name: '清除筛选' }).click()
+  await expect(page.getByRole('article')).toHaveCount(4)
+  await page.getByRole('navigation').getByRole('button', { name: '#', exact: true }).click()
+  await expect(page.getByRole('article')).toHaveCount(1)
+  await expect(page.getByRole('article')).toContainText('3D transistor')
 })

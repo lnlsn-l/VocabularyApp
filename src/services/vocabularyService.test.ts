@@ -38,7 +38,7 @@ describe('本地词库数据层', () => {
     await expect(service.create({ word: 'x', meaning: ' ', note: '', status: 'learning' })).rejects.toThrow('中文')
     await service.create({ word: 'a', meaning: '甲', note: '', status: 'learning' })
     await service.create({ word: 'b', meaning: '乙', note: '', status: 'learning' })
-    const [a] = await service.list()
+    const a = (await service.list()).find(row => row.word === 'a')!
     await expect(service.update(a.id, { word: ' B ', meaning: '修改', note: '', status: 'learning' })).rejects.toThrow('已经存在')
     expect((await service.list()).find(row => row.id === a.id)?.meaning).toBe('甲')
   })

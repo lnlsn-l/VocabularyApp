@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matchesSearch } from './search'
+import { alphabetOf, filterEntries, matchesSearch } from './search'
 import type { VocabularyEntry } from '../types/vocabulary'
 
 const entry: VocabularyEntry = { id: '1', word: 'electromagnetic interference', meaning: '电磁干扰', note: '微波论文',
@@ -12,4 +12,15 @@ describe('统一实时搜索', () => {
     expect(matchesSearch(entry, 'substrate')).toBe(false)
     expect(entry.searchCount).toBe(0)
   })
+})
+
+it('字母、状态、查询可以组合，默认稳定排序且不改变原数组', () => {
+  const substrate = { ...entry, id: '2', word: 'substrate', status: 'mastered' as const }
+  const rows = [substrate, entry]
+  expect(filterEntries(rows, 'electro', 'learning', 'E', 'alphabet')).toEqual([entry])
+  expect(filterEntries(rows, '', 'all', 'all', 'alphabet')[0]).toBe(entry)
+  expect(rows[0]).toBe(substrate)
+  expect(alphabetOf(' 3D transistor')).toBe('#')
+  expect(alphabetOf('(EMI)')).toBe('#')
+  expect(alphabetOf(' electron mobility')).toBe('E')
 })

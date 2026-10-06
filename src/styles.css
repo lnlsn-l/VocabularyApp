@@ -24,3 +24,10 @@ input, textarea, select { display: block; box-sizing: border-box; width: 100%; p
 .search-bar { display: flex; align-items: center; background: white; border: 1px solid #c7d2ca; border-radius: 12px; padding: 8px 16px; }
 .search-bar input { margin: 0; border: 0; background: transparent; }
 .search-symbol { font-size: 28px; }
+.filter-row { display: flex; justify-content: space-between; margin: 24px 0 16px; }
+.status-filter, .alphabet-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+button[aria-pressed="true"] { background: #245b48; color: white; border-color: #245b48; }
+.alphabet-nav button { padding: 6px 9px; font-size: 13px; }
+.list-header select { width: auto; }
+.list-header { margin: 32px 0 20px; }
+.list-header h2 { display: inline; margin-right: 16px; font-size: 20px; }
