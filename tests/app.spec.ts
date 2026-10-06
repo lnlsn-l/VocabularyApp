@@ -1,8 +1,36 @@
 import { expect, test } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 
 test('开发服务器能够打开应用', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Vocabulary', exact: true })).toBeVisible()
+})
+
+test('JSON 下载、删除后恢复、重复导入和非法数据处理', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '＋ 添加词条' }).click()
+  await page.getByLabel('英文词汇 / 短语').fill('substrate')
+  await page.getByLabel('中文释义').fill('衬底')
+  await page.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(page.getByRole('article')).toHaveCount(1)
+  const downloading = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出词库' }).click()
+  const download = await downloading
+  expect(download.suggestedFilename()).toMatch(/^vocabulary-backup-\d{4}-\d{2}-\d{2}\.json$/)
+  const buffer = await readFile((await download.path())!)
+  expect(JSON.parse(buffer.toString())).toMatchObject({ version: 1, app: 'VocabularyApp', exportedAt: expect.any(String), entries: [expect.objectContaining({ word: 'substrate' })] })
+  await page.getByRole('article').getByRole('button', { name: '删除', exact: true }).click()
+  await page.getByRole('button', { name: '永久删除', exact: true }).click()
+  await expect(page.getByRole('article')).toHaveCount(0)
+  const file = { name: 'backup.json', mimeType: 'application/json', buffer }
+  await page.getByLabel('选择 JSON 备份').setInputFiles(file)
+  await expect(page.getByText('成功导入：1；重复跳过：0；无效数据：0。')).toBeVisible()
+  await expect(page.getByRole('article')).toHaveCount(1)
+  await page.getByLabel('选择 JSON 备份').setInputFiles(file)
+  await expect(page.getByText('成功导入：0；重复跳过：1；无效数据：0。')).toBeVisible()
+  await page.getByLabel('选择 JSON 备份').setInputFiles({ name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{') })
+  await expect(page.getByRole('alert')).toContainText('无法解析')
+  await expect(page.getByRole('article')).toHaveCount(1)
 })
 
 test('英文、中文和备注实时搜索', async ({ page }) => {

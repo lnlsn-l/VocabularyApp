@@ -3,6 +3,7 @@ import type { VocabularyRepository } from '../repositories/vocabularyRepository'
 import type { VocabularyInput, VocabularyStatus } from '../types/vocabulary'
 import type { VocabularyEntry } from '../types/vocabulary'
 import { validateInput, VocabularyError } from '../utils/validation'
+import { createBackup, parseBackup } from '../utils/backup'
 
 export class VocabularyService {
   constructor(private readonly repository: VocabularyRepository) {}
@@ -46,6 +47,14 @@ export class VocabularyService {
 
   recordView(id: string) {
     return this.perform(() => this.repository.recordView(id, new Date().toISOString()), '查看记录保存失败，请重试。')
+  }
+
+  async exportJSON() { return createBackup(await this.list()) }
+
+  async importJSON(text: string) {
+    const { entries, invalid } = parseBackup(text)
+    const result = await this.perform(() => this.repository.merge(entries), '导入保存失败。本次合并已回滚，原有词库未被覆盖，请重试。')
+    return { ...result, invalid }
   }
 }
 

@@ -38,3 +38,5 @@ button[aria-pressed="true"] { background: #245b48; color: white; border-color: #
 .detail-note p { white-space: pre-wrap; }
 .detail-meta div { display: flex; justify-content: space-between; gap: 16px; margin-top: 10px; font-size: 13px; }
 .detail-meta dt { color: #6b786e; }
+.storage-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
+.backup-buttons { display: flex; gap: 8px; }

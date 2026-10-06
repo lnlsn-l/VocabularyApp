@@ -13,6 +13,25 @@ function setup() {
 afterEach(async () => { await Promise.all(databases.splice(0).map(db => db.delete())) })
 
 describe('本地词库数据层', () => {
+  it('合并导入去重、保护旧词和 ID 冲突，重复导入不增记录', async () => {
+    const { service } = setup()
+    await service.create({ word: 'substrate', meaning: '原有释义', note: '', status: 'learning' })
+    const [entry] = await service.list()
+    const backup = JSON.stringify({ version: 1, app: 'VocabularyApp', exportedAt: entry.createdAt, entries: [
+      { ...entry, word: ' Substrate ', meaning: '覆盖测试' },
+      { ...entry, word: 'impedance', meaning: '阻抗' },
+      { ...entry, word: ' IMPEDANCE ' }, { ...entry, meaning: ' ' },
+    ] })
+    expect(await service.importJSON(backup)).toEqual({ imported: 1, duplicates: 2, invalid: 1 })
+    const rows = await service.list()
+    expect(rows.find(row => row.word === 'substrate')?.meaning).toBe('原有释义')
+    expect(new Set(rows.map(row => row.id)).size).toBe(2)
+    expect(await service.importJSON(backup)).toEqual({ imported: 0, duplicates: 3, invalid: 1 })
+    const exported = await service.exportJSON()
+    expect(exported).not.toContain('normalizedWord')
+    await expect(service.importJSON('{')).rejects.toThrow('无法解析')
+    expect(await service.list()).toHaveLength(2)
+  })
   it('只在显式查看时记录次数，并发查看不丢计数', async () => {
     const { service } = setup()
     await service.create({ word: 'substrate', meaning: '衬底', note: '', status: 'learning' })

@@ -6,6 +6,7 @@ import { StatusFilter } from '../components/StatusFilter'
 import { WordForm } from '../components/WordForm'
 import { WordList } from '../components/WordList'
 import { WordDetail } from '../components/WordDetail'
+import { BackupControls } from '../components/BackupControls'
 import { useVocabulary } from '../hooks/useVocabulary'
 import { vocabularyService } from '../services/vocabularyService'
 import type { VocabularyEntry, VocabularyInput } from '../types/vocabulary'
@@ -52,7 +53,8 @@ export function Home() {
       <p className="subtitle">让每一次阅读，都成为下一次的积累。</p></div>
       <button className="primary" disabled={loading || !!error} onClick={() => setForm({})}>＋ 添加词条</button>
     </header>
-    <p className="storage-note">本地保存 · 当前浏览器的独立词库</p>
+    <div className="storage-row"><p className="storage-note">本地保存 · 当前浏览器的独立词库</p>
+      <BackupControls disabled={loading || !!error || busy} onNotice={setNotice} /></div>
     <SearchBar value={query} onChange={setQuery} />
     <div className="filter-row"><StatusFilter value={status} entries={entries} onChange={setStatus} />
       <button className="text-button" onClick={clearFilters}>清除筛选</button></div>
