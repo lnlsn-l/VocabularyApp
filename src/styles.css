@@ -21,3 +21,6 @@ label { display: block; margin: 16px 0; }
 input, textarea, select { display: block; box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #c7d2ca; border-radius: 8px; margin-top: 8px; }
 .modal-actions { justify-content: flex-end; margin-top: 24px; }
 .optional { color: #79867c; font-size: 12px; }
+.search-bar { display: flex; align-items: center; background: white; border: 1px solid #c7d2ca; border-radius: 12px; padding: 8px 16px; }
+.search-bar input { margin: 0; border: 0; background: transparent; }
+.search-symbol { font-size: 28px; }

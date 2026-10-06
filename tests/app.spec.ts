@@ -5,6 +5,29 @@ test('开发服务器能够打开应用', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Vocabulary', exact: true })).toBeVisible()
 })
 
+test('英文、中文和备注实时搜索', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(async () => {
+    const path = '/src/services/vocabularyService.ts'
+    const { vocabularyService } = await import(path)
+    await vocabularyService.create({ word: 'substrate', meaning: '衬底', note: '半导体论文', status: 'learning' })
+    await vocabularyService.create({ word: 'electromagnetic interference', meaning: '电磁干扰', note: '微波', status: 'learning' })
+  })
+  const search = page.getByRole('searchbox', { name: '搜索词库' })
+  for (const term of ['sub', 'strate', 'SUB', '衬底', '半导体']) {
+    await search.fill(term)
+    await expect(page.getByRole('article')).toHaveCount(1)
+    await expect(page.getByRole('article')).toContainText('substrate')
+  }
+  for (const term of ['ele', 'interference', '电磁', '干扰', '微波']) {
+    await search.fill(term)
+    await expect(page.getByRole('article')).toHaveCount(1)
+    await expect(page.getByRole('article')).toContainText('electromagnetic interference')
+  }
+  await search.fill('不存在')
+  await expect(page.getByText('没有找到匹配的词条')).toBeVisible()
+})
+
 test('真实 IndexedDB 在页面刷新后保留数据', async ({ page }) => {
   await page.goto('/')
   await page.evaluate(async () => {
