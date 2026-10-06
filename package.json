@@ -12,6 +12,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "dexie": "^4.4.6",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
