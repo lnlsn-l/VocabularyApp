@@ -65,3 +65,9 @@ package.json、lockfile 顶层及根包版本统一为 1.1.0，无新依赖。�
 最终本地 lint/build/check:dist、36 项 unit/data、21 项开发 E2E、14 项生产/迁移 E2E、18 项静态生产 UI E2E 通过。先检查错误再继续后续门槛，没有跳过失败。迁移夹具 SVG 引起的 favicon.ico 404 已定位并改为空白页面，最终无应用资源/脚本错误。
 
 没有实现可选 persist、排序偏好、全局添加快捷键或复制完整词条，避免增加非核心入口；本阶段全部必做流程已实现。物理 OS IME 与非 Chrome 浏览器仍需后续人工兼容验证，未声称全浏览器已验证。正式 Pages、CI、发布提交及 v1.1.0 标签证据在最终报告记录；标签必须在真实线上验收后创建。
+
+## 发布与线上验收完成
+
+发布提交 228799ad07547b0f8ad5df46dcd18a9da933a9a7，Actions [37575769883](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37575769883) build/deploy 全部成功。真实 Pages HTTPS 14 项通过（24.1 秒），1440px/360px 截图检查通过；本次真实 artifact 只有四个静态文件，SHA256 与本地验收构建一致。
+
+完成上述验收后创建并推送 v1.1.0，解析到 228799a。本报告后的独立 docs 提交只补充实际发布证据，不改变应用或重新部署。完整结论、存储名称清单、tag/提交关系、验证边界与下一阶段建议见 [stage2-part2-report.md](stage2-part2-report.md)。已后台恢复 localhost:5173，HTTP 200。本阶段停止新增功能，等待用户审阅。

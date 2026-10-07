@@ -75,3 +75,5 @@ Windows，Node.js 24.14.0、npm 11.18.0、Git 2.54.0.windows.1。GitHub CLI 2.10
 1000/5000/10000 条程序化内存基础验证覆盖搜索/组合筛选和导入分析，具体测量见 stage2-part2.md。不是完整 DOM 大库渲染、长期压力或所有浏览器性能保证。IME 覆盖真实 Chrome 中注入的组合事件和真实 Enter，并未驱动操作系统候选窗口。物理中文输入法、其他浏览器/手机型号、实际电脑重启仍未验证。
 
 CI、真实 Pages HTTPS、部署 artifact 和验收后 tag 的最终证据见 [stage2-part2-report.md](stage2-part2-report.md)。本阶段未重新执行依赖漏洞审计，第一版 audit 结果仅为历史记录。生产依赖无变化。
+
+发布提交 228799a 对应 Actions 37575769883 全部成功；真实 Pages HTTPS 执行同一 test:pages，14 项通过（24.1 秒）。线上截图与新版资源检查通过，下载本次 artifact 四文件 SHA256 与本地相同。验收后才创建并推送 v1.1.0，指向 228799a；文档随后独立提交，不改变已验收应用。
