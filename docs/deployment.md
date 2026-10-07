@@ -16,7 +16,7 @@
 
 `vite.config.ts` 集中管理 base：开发为 `/`，build 和 preview 为 `/VocabularyApp/`。本地开发仍为 `http://localhost:5173/`；生产预览为 `http://localhost:5173/VocabularyApp/`。二者协议、主机、端口相同，复用同一 Origin 的数据库。favicon 使用 `%BASE_URL%favicon.svg`，JS/CSS 路径由 Vite 生成，没有引入客户端路由。本阶段没有 manifest、PWA、Service Worker 或新业务字段。
 
-数据库仍为 `VocabularyDB` 的 `vocabulary` 表、Dexie version 1；JSON 仍为 version 1。未删除、重建或升级现有数据库。只改变构建与界面说明，不访问日常浏览器的数据文件。
+当前 1.1.0 保留 `VocabularyDB/vocabulary`，通过 Dexie version 2 无损新增 `vocabularyAppMetadata`。第一部分部署时 schema 为 1；第二部分增加应用元数据，但 JSON 仍为 version 1，旧词条与唯一索引不变。不删除或重建用户数据库，测试只使用独立 Profile。详见 `stage2-part2.md`。
 
 ## 工作流
 
@@ -61,9 +61,13 @@ Remove-Item Env:\VOCABULARY_PAGES_URL
 
 同一套测试验证首次空库、JS/CSS/favicon、页面与资源错误、无第三方请求、CRUD、搜索、A–Z/#、四种排序、桌面与 360px 布局、刷新和标签页／浏览器进程重开、两个独立 Profile、localhost 导出到目标 Origin 导入、全部元数据一致、目标导出到 localhost 导入、重复与非法 JSON。2026-10-07 对实际 `https://lnlsn-l.github.io/VocabularyApp/` 执行上述环境变量命令，4 项全部通过；线上 1440px/360px 页面、表单和详情截图已检查。后续应用变更仍应按需重新验收。
 
+1.1.0 的 `test:pages` 同时运行 `stage2.spec.ts`：备份快照/多标签页、预览取消与重确认、连续添加、单项筛选、Ctrl/Meta+K、IME 事件/Enter、真实剪贴板及异常、真实 v1 升级、其他应用哨兵、提醒暂停、下载失败、BOM/20MB 边界和移动端。上述 4 项是第一部分历史结果；第二部分的当前结果与目标 commit 以 `stage2-part2-report.md` 为准。部署 workflow 及最小权限保持不变。
+
 ## 迁移和备份
 
 先在原 `http://localhost:5173/`、原浏览器 Profile 中导出 JSON，保留文件，再打开部署后的 HTTPS 地址导入。切换到全部词条核对数量，并抽查释义、备注、状态、查看次数和时间。新词元数据保留，同名词仍按第一版规则跳过并保留目标库内容。确认无误后才决定旧地址是否继续使用；保留外部备份。网页不自动寻找文件，也不跨 Origin 读取 localhost。
+
+1.1.0 导入前须核对预览并确认合并；预览后词库发生变化时需要再次确认。应用内记录的“最近发起导出”不保证文件已保存。首次升级的非空库初始化为待导出，历史导出时间未知。旧版本标签页可能因 schema 升级需要刷新；不通过清理网站数据处理。
 
 Repository 保存代码，Pages 提供网页，IndexedDB 保存用户数据；三者职责独立。不同浏览器/Profile 拥有独立数据，同一 Origin 下的路径通常不隔离存储；共享同一 Profile 的人共用词库。清理网站数据、删除 Profile、系统重装或存储回收可能丢失数据，需定期 JSON 备份。没有自动同步或 GitHub 词库备份。
 

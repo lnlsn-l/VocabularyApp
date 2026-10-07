@@ -52,3 +52,26 @@ Windows，Node.js 24.14.0、npm 11.18.0、Git 2.54.0.windows.1。GitHub CLI 2.10
 初始化 → IndexedDB 数据层 → CRUD → 实时搜索 → 字母与组合筛选 → 真实查看统计 → JSON 备份 → 响应式界面与错误提示 → 文档及最终验收 → GitHub Private 推送。
 
 个人词库位于浏览器，备份目录、依赖、构建输出、测试产物和临时缓存均在 Git 忽略范围内。
+
+## 第二阶段第二部分：1.1.0 本次验收
+
+日期：2026-10-07（Asia/Shanghai）；基线 f4a8c27，schema 2 / JSON 1；Windows、Node 24.14.0、Chrome 154.0.8037.98。历史结果不作为本次通过依据。
+
+| 本次命令 | 结果 |
+| --- | --- |
+| npm run lint | 通过 |
+| npm test | 7 个文件，36 项 unit/data 通过 |
+| npm run build | TypeScript 与生产构建通过 |
+| npm run check:dist | 仅 index.html、favicon.svg、JS/CSS，路径与凭据检查通过 |
+| npm run test:e2e | 21 项开发 Chrome 测试通过 |
+| npm run test:pages | 14 项生产子路径、JSON 双向迁移及 stage2 测试通过 |
+| VOCABULARY_PREVIEW_TEST=1 的 test:e2e | 18 项静态生产预览测试通过 |
+| git diff --check | 通过 |
+
+新增覆盖：真实 v1→v2 数据无损及唯一索引、写入与 metadata 整笔回滚、并发修订、导出快照外新变化、无操作/零新增、预览只读/取消、冲突与文件内重复/ID 冲突、事务内重确认、暂停跨刷新、全库导出及失败、连续添加成功/重复/失败、编辑边界、单项筛选与排序、搜索快捷键、IME 事件/Enter、clipboard 实际读写+权限/不支持注入、其他应用 DB/local/session 哨兵、BOM 与真实 20MB+1 文件拒绝。
+
+所有 stage2 用例检查 pageerror/console error。迁移夹具是同 Origin 的隔离空白页，先建立 v1 库再实际加载应用；测试初次直接打开 SVG 引起浏览器 favicon.ico 探测 404，改用明确图标的空白夹具后复验通过，没有屏蔽应用资源错误。桌面1440px/手机360px、预览差异、复制详情和表单截图已检查。
+
+1000/5000/10000 条程序化内存基础验证覆盖搜索/组合筛选和导入分析，具体测量见 stage2-part2.md。不是完整 DOM 大库渲染、长期压力或所有浏览器性能保证。IME 覆盖真实 Chrome 中注入的组合事件和真实 Enter，并未驱动操作系统候选窗口。物理中文输入法、其他浏览器/手机型号、实际电脑重启仍未验证。
+
+CI、真实 Pages HTTPS、部署 artifact 和验收后 tag 的最终证据见 [stage2-part2-report.md](stage2-part2-report.md)。本阶段未重新执行依赖漏洞审计，第一版 audit 结果仅为历史记录。生产依赖无变化。

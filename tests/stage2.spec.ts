@@ -1,6 +1,15 @@
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
+const browserErrors = new WeakMap<Page, string[]>()
+test.beforeEach(({ page }) => {
+  const errors: string[] = []
+  browserErrors.set(page, errors)
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
+})
+test.afterEach(({ page }) => { expect(browserErrors.get(page)).toEqual([]) })
+
 async function add(page: Page, word = 'substrate', meaning = '衬底') {
   await page.getByRole('button', { name: '＋ 添加词条', exact: true }).click()
   await page.getByLabel('英文词汇 / 短语').fill(word)
@@ -219,7 +228,11 @@ test('第二阶段 HTTPS/localhost 复制正确与失败、不支持反馈', asy
 })
 
 test('第二阶段真实 v1 升级、应用命名空间和其他应用数据保留', async ({ page, baseURL }) => {
-  await page.goto(new URL('favicon.svg', baseURL!).href)
+  // 同 Origin 空白测试页先建立真实旧库，不运行应用；显式图标避免浏览器请求 favicon.ico。
+  const seedURL = new URL('stage2-test-seed.html', baseURL!).href
+  await page.route(seedURL, route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><head><link rel="icon" href="data:,"></head><body>VocabularyApp migration fixture</body>' }))
+  await page.goto(seedURL)
+  await page.unroute(seedURL)
   const legacy = await page.evaluate(async () => {
     const open = (name: string, version: number, upgrade: (db: IDBDatabase) => void) => new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(name, version)
@@ -320,4 +333,21 @@ test('第二阶段连续保存失败保留内容，360px 预览、复制和筛�
   await page.screenshot({ path: testInfo.outputPath('stage2-home-360.png'), fullPage: true })
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.screenshot({ path: testInfo.outputPath('stage2-home-1440.png'), fullPage: true })
+})
+
+test('第二阶段 BOM 与 20MB 文件边界保持兼容，非法版本不写入', async ({ page }) => {
+  await page.goto('./'); await add(page)
+  const exported = await backup(page)
+  const before = await state(page)
+  const input = page.getByLabel('选择 JSON 备份')
+  await input.setInputFiles({ name: 'bom.json', mimeType: 'application/json', buffer: Buffer.from('\uFEFF' + JSON.stringify(exported)) })
+  await expect(page.getByRole('dialog', { name: '导入预览' })).toBeVisible()
+  await page.getByRole('button', { name: '取消', exact: true }).click()
+  expect(await state(page)).toEqual(before)
+  await input.setInputFiles({ name: 'version2.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...exported, version: 2 })) })
+  await expect(page.getByRole('alert')).toContainText('不支持该备份版本')
+  await input.setInputFiles({ name: 'oversize.json', mimeType: 'application/json', buffer: Buffer.alloc(20 * 1024 * 1024 + 1) })
+  await expect(page.getByRole('alert')).toContainText('超过 20 MB')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  expect(await state(page)).toEqual(before)
 })
