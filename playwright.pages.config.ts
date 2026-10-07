@@ -5,7 +5,7 @@ const deployedURL = process.env.VOCABULARY_PAGES_URL
 
 export default defineConfig({
   testDir: './tests',
-  testMatch: 'pages.spec.ts',
+  testMatch: ['pages.spec.ts', 'stage2.spec.ts'],
   fullyParallel: false,
   workers: 1,
   reporter: 'list',

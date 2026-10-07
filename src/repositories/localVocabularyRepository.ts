@@ -4,6 +4,8 @@ import type { VocabularyEntry, VocabularyInput, VocabularyStatus } from '../type
 import { normalizeWord, VocabularyError } from '../utils/validation'
 import type { VocabularyRepository } from './vocabularyRepository'
 import { backupStateKey, type BackupState, type ExportSnapshot, type BackupSummary } from '../types/backupState'
+import type { ParsedBackup } from '../utils/backup'
+import { analyzeImport, type ConfirmImportResult, type ImportPreview } from '../utils/importAnalysis'
 
 // 数据库内部的去重索引不泄露到 UI 或备份格式。
 function toEntry(row: StoredEntry): VocabularyEntry {
@@ -134,25 +136,41 @@ export class LocalVocabularyRepository implements VocabularyRepository {
     })
   }
 
+  async previewImport(document: ParsedBackup): Promise<ImportPreview> {
+    return this.db.transaction('r', this.db.vocabulary, this.db.vocabularyAppMetadata, async () => ({
+      analysis: analyzeImport(document, await this.list()).analysis, revision: (await this.state()).dataRevision,
+    }))
+  }
+
+  async confirmImport(document: ParsedBackup, revision: number): Promise<ConfirmImportResult> {
+    return this.db.transaction('rw', this.db.vocabulary, this.db.vocabularyAppMetadata, async () => {
+      const current = await this.list()
+      const state = await this.state()
+      const { analysis, additions } = analyzeImport(document, current)
+      // 对任何可备份数据修订采取保守重确认，包括其他标签页的查看统计。
+      if (state.dataRevision !== revision) return { changed: true, preview: { analysis, revision: state.dataRevision } }
+      await this.addMerged(additions, current)
+      return { changed: false, result: { imported: analysis.imported, duplicates: analysis.duplicates, invalid: analysis.invalid } }
+    })
+  }
+
+  private async addMerged(additions: VocabularyEntry[], existing: VocabularyEntry[]) {
+    const ids = new Set(existing.map(row => row.id))
+    for (const entry of additions) {
+      let id = entry.id
+      while (ids.has(id)) id = crypto.randomUUID()
+      await this.db.vocabulary.add({ ...entry, id, normalizedWord: normalizeWord(entry.word) })
+      ids.add(id)
+    }
+    if (additions.length > 0) await this.changed(true)
+  }
+
   async merge(entries: VocabularyEntry[]) {
     return this.db.transaction('rw', this.db.vocabulary, this.db.vocabularyAppMetadata, async () => {
-      const existing = await this.db.vocabulary.toArray()
-      const words = new Set(existing.map(row => row.normalizedWord))
-      const ids = new Set(existing.map(row => row.id))
-      let imported = 0
-      let duplicates = 0
-      for (const entry of entries) {
-        const normalizedWord = normalizeWord(entry.word)
-        if (words.has(normalizedWord)) { duplicates++; continue }
-        // 不同词条发生 ID 冲突时重新生成 ID，绝不覆盖旧数据。
-        const id = ids.has(entry.id) ? crypto.randomUUID() : entry.id
-        await this.db.vocabulary.add({ ...entry, id, normalizedWord })
-        ids.add(id)
-        words.add(normalizedWord)
-        imported++
-      }
-      if (imported > 0) await this.changed(true)
-      return { imported, duplicates }
+      const existing = await this.list()
+      const { analysis, additions } = analyzeImport({ entries, invalid: 0, rawTotal: entries.length, version: 1, exportedAt: '' }, existing)
+      await this.addMerged(additions, existing)
+      return { imported: additions.length, duplicates: analysis.duplicates }
     })
   }
 }

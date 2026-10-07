@@ -3,7 +3,7 @@ import type { VocabularyRepository } from '../repositories/vocabularyRepository'
 import type { VocabularyInput, VocabularyStatus } from '../types/vocabulary'
 import type { VocabularyEntry } from '../types/vocabulary'
 import { validateInput, VocabularyError } from '../utils/validation'
-import { createBackup, parseBackup, downloadBackup } from '../utils/backup'
+import { createBackup, parseBackup, parseBackupDocument, downloadBackup, type ParsedBackup } from '../utils/backup'
 import type { BackupSummary } from '../types/backupState'
 import { reminderResumeAt } from '../utils/backupReminder'
 
@@ -74,6 +74,16 @@ export class VocabularyService {
     const { entries, invalid } = parseBackup(text)
     const result = await this.perform(() => this.repository.merge(entries), '导入保存失败。本次合并已回滚，原有词库未被覆盖，请重试。')
     return { ...result, invalid }
+  }
+
+  async previewImport(text: string) {
+    const document = parseBackupDocument(text)
+    const preview = await this.perform(() => this.repository.previewImport(document), '无法读取词库并分析导入，请重试。')
+    return { document, preview }
+  }
+
+  confirmImport(document: ParsedBackup, revision: number) {
+    return this.perform(() => this.repository.confirmImport(document, revision), '导入保存失败。本次合并已回滚，原有词库未被覆盖，请重试。')
   }
 }
 

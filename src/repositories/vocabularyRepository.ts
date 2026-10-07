@@ -1,5 +1,7 @@
 import type { ImportResult, VocabularyEntry, VocabularyInput, VocabularyStatus } from '../types/vocabulary'
 import type { BackupSummary, ExportSnapshot } from '../types/backupState'
+import type { ParsedBackup } from '../utils/backup'
+import type { ConfirmImportResult, ImportPreview } from '../utils/importAnalysis'
 
 export interface VocabularyRepository {
   list(): Promise<VocabularyEntry[]>
@@ -15,4 +17,6 @@ export interface VocabularyRepository {
   exportSnapshot(): Promise<ExportSnapshot>
   markExport(snapshot: ExportSnapshot, requestedAt: string): Promise<void>
   dismissReminder(until: string): Promise<void>
+  previewImport(document: ParsedBackup): Promise<ImportPreview>
+  confirmImport(document: ParsedBackup, revision: number): Promise<ConfirmImportResult>
 }

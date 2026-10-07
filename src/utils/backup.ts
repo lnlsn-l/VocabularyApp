@@ -30,7 +30,15 @@ function parseEntry(value: unknown): VocabularyEntry | null {
   } catch { return null }
 }
 
-export function parseBackup(text: string): { entries: VocabularyEntry[]; invalid: number } {
+export interface ParsedBackup {
+  entries: VocabularyEntry[]
+  invalid: number
+  exportedAt: string
+  version: 1
+  rawTotal: number
+}
+
+export function parseBackupDocument(text: string): ParsedBackup {
   let value: unknown
   try { value = JSON.parse(text.replace(/^\uFEFF/, '')) }
   catch { throw new VocabularyError('JSON 无法解析，请选择完整的词库备份文件。') }
@@ -46,6 +54,11 @@ export function parseBackup(text: string): { entries: VocabularyEntry[]; invalid
     if (entry) entries.push(entry)
     else invalid++
   }
+  return { entries, invalid, exportedAt: value.exportedAt, version: 1, rawTotal: value.entries.length }
+}
+
+export function parseBackup(text: string): { entries: VocabularyEntry[]; invalid: number } {
+  const { entries, invalid } = parseBackupDocument(text)
   return { entries, invalid }
 }
 

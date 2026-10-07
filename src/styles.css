@@ -108,6 +108,14 @@ input[type='file'][hidden] { display: none; }
 .detail-meta div { display: flex; justify-content: space-between; gap: 16px; margin-top: 12px; font-size: 12px; }
 .detail-meta dt { color: var(--muted); flex-shrink: 0; }
 .detail-meta dd { margin: 0; text-align: right; }
+.preview-file, .import-difference { overflow-wrap: anywhere; }
+.preview-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f5f7f3; padding: 16px; border-radius: 8px; font-size: 13px; }
+.preview-stats dd { margin: 4px 0 0; font-size: 20px; }
+.import-differences summary { cursor: pointer; padding: 10px 0; }
+.import-difference { border-top: 1px solid var(--border); padding: 10px 0; font-size: 13px; }
+.difference-field { background: #f5f7f3; padding: 10px; margin: 8px 0; border-radius: 8px; }
+.difference-field p { white-space: pre-wrap; margin: 6px 0; }
+.difference-pagination { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; }
 @media (max-width: 700px) {
   main { padding: 28px 16px 20px; }
   h1 { font-size: 32px; }

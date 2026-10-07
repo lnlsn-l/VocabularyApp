@@ -92,9 +92,11 @@ test('JSON 下载、删除后恢复、重复导入和非法数据处理', async 
   await expect(page.getByRole('article')).toHaveCount(0)
   const file = { name: 'backup.json', mimeType: 'application/json', buffer }
   await page.getByLabel('选择 JSON 备份').setInputFiles(file)
+  await page.getByRole('button', { name: '确认合并', exact: true }).click()
   await expect(page.getByText('成功导入：1；重复跳过：0；无效数据：0。')).toBeVisible()
   await expect(page.getByRole('article')).toHaveCount(1)
   await page.getByLabel('选择 JSON 备份').setInputFiles(file)
+  await page.getByRole('button', { name: '确认合并', exact: true }).click()
   await expect(page.getByText('成功导入：0；重复跳过：1；无效数据：0。')).toBeVisible()
   await page.getByLabel('选择 JSON 备份').setInputFiles({ name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{') })
   await expect(page.getByRole('alert')).toContainText('无法解析')

@@ -30,6 +30,8 @@ async function importFile(page: Page, buffer: Buffer, empty = false) {
   await page.getByRole('button', { name: empty ? '导入 JSON 备份' : '导入 JSON', exact: true }).click()
   const chooser = await choosing
   await chooser.setFiles({ name: 'vocabulary-backup-test.json', mimeType: 'application/json', buffer })
+  await expect(page.getByRole('dialog', { name: '导入预览' })).toBeVisible()
+  await page.getByRole('button', { name: '确认合并', exact: true }).click()
 }
 
 test('生产子路径资源、样式、图标和数据说明，无第三方请求', async ({ page, baseURL }) => {

@@ -3,6 +3,7 @@ import { vocabularyService } from '../services/vocabularyService'
 import { errorMessage, VocabularyError } from '../utils/validation'
 import { useBackupState } from '../hooks/useBackupState'
 import { shouldRemind } from '../utils/backupReminder'
+import { ImportPreviewDialog } from './ImportPreviewDialog'
 
 interface Props { disabled: boolean; onNotice: (message: string) => void; inputRef?: RefObject<HTMLInputElement | null> }
 export function BackupControls({ disabled, onNotice, inputRef }: Props) {
@@ -11,6 +12,7 @@ export function BackupControls({ disabled, onNotice, inputRef }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const { summary, failed, retry } = useBackupState()
+  const [importing, setImporting] = useState<Awaited<ReturnType<typeof vocabularyService.previewImport>> & { fileName: string }>()
   async function perform(action: () => Promise<void>) {
     setBusy(true); setError('')
     try { await action() }
@@ -24,8 +26,8 @@ export function BackupControls({ disabled, onNotice, inputRef }: Props) {
       let text: string
       try { text = await file.text() }
       catch { throw new VocabularyError('无法读取所选文件，请重新选择可读取的 JSON 备份。') }
-      const result = await vocabularyService.importJSON(text)
-      onNotice(`成功导入：${result.imported}；重复跳过：${result.duplicates}；无效数据：${result.invalid}。`)
+      const prepared = await vocabularyService.previewImport(text)
+      setImporting({ ...prepared, fileName: file.name })
     })
   }
   return <div className="backup-controls">
@@ -47,5 +49,8 @@ export function BackupControls({ disabled, onNotice, inputRef }: Props) {
     </div>}
     {failed && <p role="alert">无法读取备份状态。<button onClick={retry}>重试备份状态</button></p>}
     {error && <p className="form-error" role="alert">{error}</p>}
+    {importing && <ImportPreviewDialog fileName={importing.fileName} document={importing.document} initialPreview={importing.preview}
+      onClose={() => setImporting(undefined)} onImported={onNotice}
+      onConfirm={revision => vocabularyService.confirmImport(importing.document, revision)} />}
   </div>
 }
