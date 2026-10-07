@@ -72,7 +72,7 @@ export function Home() {
       {loading ? <p role="status">正在读取本地词库…</p> : !error && (visible.length ?
         <WordList entries={visible} busy={busy} onEdit={entry => setForm({ entry })} onDelete={entry => { setActionError(''); setDeleting(entry) }} onOpen={entry => void open(entry.id)}
           onStatus={entry => void run(() => vocabularyService.setStatus(entry.id, entry.status === 'learning' ? 'mastered' : 'learning'), '学习状态已更新。')} /> :
-        <div className="empty-state"><span className="empty-icon" aria-hidden="true">Aa</span>
+        <div className="empty-state"><span className="empty-icon" aria-hidden="true">{letter === 'all' ? 'Aa' : letter}</span>
           <h3>{entries.length ? '没有找到匹配的词条' : '从阅读中遇到的第一个词开始'}</h3><p>{entries.length ? '试试其他关键词，或清除字母和状态筛选。' : '添加英文词汇、术语或短语，写下属于你的中文释义。'}</p>
           <div className="empty-actions">{entries.length > 0 && <button onClick={clearFilters}>清除筛选</button>}
             <button className="primary" onClick={() => setForm({})}>{entries.length ? '添加词条' : '添加第一个词条'}</button></div></div>)}
