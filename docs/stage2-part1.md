@@ -2,7 +2,7 @@
 
 日期：2026-10-07（Asia/Shanghai）。路径：`D:\VocabularyApp`。
 
-**状态：部署准备与本地验收已完成，公开上线受 GitHub 账户方案阻塞；本阶段尚未全部验收完成。** 仓库保持 Private，未改为 Public。目标 HTTPS 地址当前返回 404，不能作为已上线产品交付。
+**状态：第二阶段第一部分已完成，网站上线并通过真实 HTTPS 验收。** 仓库经用户明确授权由 Private 改为 Public。最终地址：[https://lnlsn-l.github.io/VocabularyApp/](https://lnlsn-l.github.io/VocabularyApp/)。
 
 ## 开发前基线与检查
 
@@ -11,8 +11,8 @@
 - origin：`https://github.com/lnlsn-l/VocabularyApp.git`。
 - 环境：Node.js 24.14.0、npm 11.18.0。GitHub CLI 登录 `lnlsn-l`，具有 repo/workflow 权限；仓库 admin / push 可用，Actions 已启用。
 - 沙箱内 gh 登录检查曾失败；允许联网后验证成功，不是用户凭据失效。Vite/Vitest 沙箱启动遇到 `spawn EPERM`，允许子进程后正常运行。
-- 仓库实际 visibility 为 private、默认分支 main、`has_pages=false`。Pages 查询返回 404。创建 workflow 类型 Pages 返回 HTTP 422：`Your current plan does not support GitHub Pages for this repository.`
-- API 未返回账户方案名称，未推断具体订阅级别。限制是此 Private 仓库的 Pages 资格。未操作账号密码、购买方案或改变 visibility。
+- 开发前仓库 visibility 为 private、默认分支 main、`has_pages=false`。Pages 查询返回 404。创建 workflow 类型 Pages 返回 HTTP 422：`Your current plan does not support GitHub Pages for this repository.`
+- API 未返回账户方案名称，未推断具体订阅级别。首次保留 Private 并完成准备后，用户明确回复“变成public即可”，随后才执行 Private → Public 并创建 Pages。未操作账号密码或购买方案。
 
 ## 本阶段文件与技术决策
 
@@ -47,7 +47,7 @@
 
 全局 `contents: read`，deploy job 为 `contents: read`、`pages: write`、`id-token: write`。官方 Actions 固定到 API 核对过的提交 SHA，无 write-all、硬编码 Token 或 PAT。只上传 dist，不提交 dist，不上传测试输出或浏览器数据。
 
-已推送应用／CI提交 `3b0d2e8b5457f7a346c6c0f6712e491f34f9605f`，真实 Actions：[37569721357](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37569721357)。最终运行结果见下方“远端结果”。
+应用／CI提交为 `3b0d2e8b5457f7a346c6c0f6712e491f34f9605f`。首次准备工作流：[37569721357](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37569721357)；用户授权改为 Public 后部署工作流：[37570191550](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37570191550)。详细结果见下方“远端结果”。
 
 ## 本地验证结果
 
@@ -75,15 +75,26 @@
 
 测试初次发现 build 与 preview 对 base 的判断差异，已用 `isPreview` 修复并复验；测试中备注／状态标签和重复筛选按钮定位也已调整。最终结果全部通过，没有跳过功能测试或将失败当作成功。
 
-**本地跨 Origin 模拟已通过，不等于真实 localhost → Pages HTTPS 验收已完成。** 未修改用户已有 localhost 数据；数据库及数据访问代码无改动，未执行清空升级。未实际重启用户电脑。
+本地跨 Origin 模拟已通过；随后又对实际 Pages HTTPS 地址完成同一套验收，见下方。未修改用户已有 localhost 数据；数据库及数据访问代码无改动，未执行清空升级。未实际重启用户电脑。
 
 ## 远端结果
 
-真实 Actions `37569721357` 已结束：build job 成功（1 分 13 秒），deploy job 失败（3 秒），整体 conclusion=failure。Linux runner 上 npm ci、lint、21 项单元测试、11 项开发 E2E、4 项生产／迁移 E2E、build、check:dist 和静态 artifact 上传全部通过。
+首次 Actions `37569721357`：build 成功，deploy 在 Configure Pages 处因站点尚未创建而失败；创建站点曾因 Private 方案资格被 HTTP 422 拒绝。首次失败已查日志，没有跳过或当作部署成功。
 
-失败位置为 `Configure Pages`：Pages 查询返回 HTTP 404，`Deploy` 未执行。已查阅失败日志；创建站点先前已被 HTTP 422 拒绝，原因是当前账户方案不支持此 Private 仓库。没有通过重跑同一工作流绕过账户限制，没有改变 visibility。
+用户明确授权 Public 后，仓库可见性变更成功，Pages 创建成功。创建 API 已返回 HTTPS 启用；紧接着再次设置 HTTPS 曾因证书尚未就绪返回 404，未将此当作部署失败或改用 HTTP。部署后再次查询确认 `https_enforced=true`，实际 HTTPS 浏览器访问正常。
 
-独立 Chrome 实际打开 `https://lnlsn-l.github.io/VocabularyApp/`：HTTP 404，标题 `Site not found · GitHub Pages`，应用未加载。因此尚无经 Pages API 确认的最终部署 URL；以上仅为目标地址。线上 JS/CSS、CRUD、HTTPS 下载／上传、Profile 隔离和 localhost → Pages 迁移尚未验收，不能宣称完成。
+最终 Actions `37570191550`：整体 success，build 54 秒、deploy 13 秒。部署基线 `4bd1d27c320cb4485c0a8dbca045c6b3bd237397`，应用／CI内容与已验收的 3b0d2e8 一致；中间仅增加部署文档。npm ci、lint、单元测试、开发 E2E、build、生产／迁移 E2E、check:dist、上传、configure-pages 与 deploy-pages 全部通过。
+
+Pages API 确认 `html_url=https://lnlsn-l.github.io/VocabularyApp/`、`build_type=workflow`、`public=true`、`https_enforced=true`。独立 Chrome 实际访问返回 HTTP 200，标题 `Vocabulary · 个人专业词库`，应用正常加载。API status 字段为 null，未把它当作成功依据；成功依据是工作流部署结果和实际 HTTPS 访问。
+
+设置 `VOCABULARY_PAGES_URL=https://lnlsn-l.github.io/VocabularyApp/` 后运行 `npm run test:pages`，**4 项真实线上 E2E 全部通过（11.9 秒）**：
+
+- 页面、JS/CSS/favicon 正常，无资源 404、console error 或第三方请求；全新 Profile 词库为空，没有开发者个人词条。
+- CRUD、英文／中文／备注搜索、A–Z/#、状态与四种排序全部正常；1440px 与 360px 页面、表单、详情截图已检查。
+- Pages Profile A 的 substrate 刷新、重开标签页、重启浏览器进程后保留；Profile B 同地址为空，数据相互隔离。
+- 隔离 localhost 的三词 JSON 实际导入 Pages，全部字段逐项一致；Pages 新增词后实际下载 version 1 JSON，导回 localhost 按规则新增并跳过重复；Pages 再次导入无重复新增，非法文件不会破坏原库。
+
+测试后已恢复 `http://localhost:5173/` 本地开发服务。没有访问或修改用户日常 Profile，也没有自动迁移真实个人词库。
 
 ## 数据和产物安全
 
@@ -91,7 +102,7 @@
 
 应用词库操作继续仅在当前浏览器内执行，没有上传词条的请求或服务。Repository、Pages、IndexedDB 三者的区别已写入界面、README 与部署文档。IndexedDB 按 Origin/Profile 隔离；共用同一 Profile 的人共用数据。同一 github.io Origin 下不同路径通常共用站点存储，不能当作应用间的独立安全边界。
 
-已通过 gh 下载真实 Actions artifact `github-pages`（压缩大小 109868 字节）并检查内部 `artifact.tar`，包含且仅包含上述四个静态文件及目录，无链接、JSON、IndexedDB、Profile、环境文件、依赖或测试输出。其 JS/CSS 文件名与本地一致。远端 main 文件树检查没有发现被禁止的目录或个人备份；只有 package.json、package-lock.json、tsconfig.json 三个必要配置 JSON。已验证 backups、.env/.env.local、dist、test-results、.tools 的 Git 忽略规则，已提交内容的常见凭据格式扫描无匹配。
+已通过 gh 下载首次与成功部署两次真实 Actions 的 `github-pages` artifact 并检查内部 `artifact.tar`，均只包含上述四个静态文件及目录，无链接、JSON、IndexedDB、Profile、环境文件、依赖或测试输出。JS/CSS 文件名与本地一致。远端 main 文件树没有被禁止目录或个人备份；只有 package.json、package-lock.json、tsconfig.json 三个必要配置 JSON。完整 Git 历史的文件名检查无 backups、dist、依赖、环境文件或测试 Profile 提交。已验证忽略规则，已提交内容的常见凭据格式扫描无匹配。
 
 ## 提交与交付状态
 
@@ -100,16 +111,16 @@
 | eb2cd97 | 第一版开发前基线 |
 | 1c18545 | Pages 路径与应用内本地数据说明 |
 | 3b0d2e8 | 自动部署、产物检查和隔离迁移测试 |
+| 4bd1d27 | 部署准备文档与最初的 Private 方案限制记录；成功部署基线 |
 
-本报告及 README/deployment 作为独立 docs 提交推送。报告自身的提交 hash 以 `git log -1 --oneline` 和最终交付消息为准；本阶段应用与 CI 基线固定为上述 3b0d2e8。交付约定为：main、origin 未变、git status 干净、HEAD 与 origin/main 一致；这些状态在文档提交和推送后再次核对，若有差异须在最终消息中明确报告。
+当前报告、README/deployment 的已上线结果作为后续独立 docs 提交推送，不改变已发布应用，因此不重复部署。报告自身提交 hash 以 `git log -1 --oneline` 和最终交付消息为准；应用／CI基线为 3b0d2e8，成功部署基线为 4bd1d27。交付约定为：main、origin 未变、git status 干净、HEAD 与 origin/main 一致；在文档提交和推送后再次核对，若有差异须在最终消息中明确报告。
 
 ## 已知限制与后续步骤
 
-- 当前方案不支持 Private Pages，未上线。仓库 visibility 保持 Private。
-- 选择升级支持私有 Pages 的账户方案，可保留代码私有；或明确授权将仓库改为 Public，使用免费 Pages。Public 会公开源代码和提交历史，不能仅凭部署任务自动执行。
-- 解除限制后配置 Pages 为 GitHub Actions，手动重跑工作流，核对 API html_url/page_url，再按 deployment.md 的 `VOCABULARY_PAGES_URL` 执行真实 HTTPS 浏览器验收并更新本报告。
+- 当前仓库为 Public，免费 Pages 已上线；此变化依据用户明确授权执行。源代码和 Git 提交历史公开，词库数据仍保存在各浏览器中。
+- 后续应用修改推送 main 会自动检查并部署；仅文档修改跳过部署，需要时可 workflow_dispatch 手动运行。
 - 从用户日常 localhost 迁移个人词库仍需本人导出与选择 JSON；本次没有访问或迁移真实个人词库。
 - IndexedDB 不自动同步到 GitHub 或其他设备，不保证永不丢失；定期导出并保留外部副本。
 - 没有 PWA 或离线启动缓存；首次加载和远程重新加载需要网络。
 
-下一步应先解除 Pages 账户／可见性阻塞并完成真实部署验收。后续功能按单独需求安排，本次不开始下一阶段。
+下一步建议先按 README 迁移本人词库、核对总数并保留外部 JSON 备份，再积累实际使用反馈。后续功能按单独需求安排，本次不开始下一阶段。

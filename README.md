@@ -4,13 +4,13 @@
 
 第一版完整说明、使用规则、数据与备份机制、验收边界及第二版候选方案见 [第一版说明报告](docs/v1-report.md)。
 
-纯前端、本地优先，无登录、后端、云数据库和付费 API。日常操作不需要互联网；启动本地开发服务器或静态预览后即可使用。首次安装依赖需要网络。
+纯前端、本地优先，无登录、后端、云数据库和付费 API。可直接在线使用，也可在本地运行。在线网页资源加载需要网络；词库增删改查不调用远程服务。首次安装本地依赖需要网络。
 
 ## 在线使用
 
-目标 HTTPS 地址：[VocabularyApp](https://lnlsn-l.github.io/VocabularyApp/)。**当前尚未上线**：2026-10-07，GitHub Pages 创建 API 返回 HTTP 422，当前账户方案不支持此 Private 仓库的 Pages。仓库可见性未改变。部署准备和本地验证进度见 [第二阶段第一部分记录](docs/stage2-part1.md)。
+直接打开 [VocabularyApp 在线网站](https://lnlsn-l.github.io/VocabularyApp/)。**已于 2026-10-07 上线并通过真实 HTTPS 浏览器验收**，无需安装 Node.js 或运行 npm。仓库经用户明确授权由 Private 改为 Public，通过 GitHub Actions 自动部署。完整结果见 [第二阶段第一部分交付报告](docs/stage2-part1.md)。
 
-部署完成并通过真实网页验收后，普通用户直接打开网址即可使用，无需安装 Node.js 或执行 npm。在线页面首次加载／重新加载需要网络；本阶段没有 PWA、Service Worker 或离线资源缓存。
+在线页面首次加载／重新加载需要网络；本阶段没有 PWA、Service Worker 或离线资源缓存。
 
 ## 数据保存方式、上传与同步
 
@@ -27,7 +27,7 @@
 
 ## 从本地版本迁移到 GitHub Pages
 
-以下步骤在网站部署成功后执行。**localhost 与 Pages 属于不同 Origin，数据不会自动迁移。** 新网址的空词库不代表旧词库已删除。
+**localhost 与 Pages 属于不同 Origin，数据不会自动迁移。** 新网址的空词库不代表旧词库已删除。测试已验证迁移机制，个人词库仍需你在原浏览器中主动导出并选择文件导入。
 
 1. 用原来的浏览器和 Profile 打开旧地址 `http://localhost:5173/`。需要时先按下方步骤启动本地开发服务器。
 2. 点击“导出词库”，保存 `vocabulary-backup-YYYY-MM-DD.json`，建议再保留一份到其他磁盘。
@@ -187,9 +187,9 @@ git commit -m "feat: describe the change"
 git push origin main
 ```
 
-目标仓库为当前 GitHub 账号下的 **VocabularyApp，Private 私有仓库**。仓库只保存程序代码和配置，不自动备份词库。`.gitignore` 排除 `node_modules/`、`dist/`、`.env`、`.env.*`、`backups/`、日志、临时文件、IDE 缓存和测试产物。不要使用 `git add -f` 提交个人备份或密钥。
+当前仓库为 **VocabularyApp，Public 公开仓库**。第一版交付时为 Private；2026-10-07 经用户明确授权改为 Public，使用免费 GitHub Pages。源代码与 Git 历史公开，个人词库仍保存在浏览器，不自动备份至 GitHub。`.gitignore` 排除 `node_modules/`、`dist/`、`.env`、`.env.*`、`backups/`、日志、临时文件、IDE 缓存和测试产物。不要使用 `git add -f` 提交个人备份或密钥。
 
-已创建并推送：[lnlsn-l/VocabularyApp](https://github.com/lnlsn-l/VocabularyApp)。`origin` 为 `https://github.com/lnlsn-l/VocabularyApp.git`，默认分支 `main`，已验证远端 Private 属性和文件清单。完整交付信息见 [docs/delivery-report.md](docs/delivery-report.md)。
+已创建并推送：[lnlsn-l/VocabularyApp](https://github.com/lnlsn-l/VocabularyApp)。`origin` 为 `https://github.com/lnlsn-l/VocabularyApp.git`，默认分支 `main`，已验证当前 Public 属性和文件清单。第一版历史交付信息见 [docs/delivery-report.md](docs/delivery-report.md)，当前部署信息见 [docs/stage2-part1.md](docs/stage2-part1.md)。
 
 如果 `gh` 不在 PATH，本机可用完整路径调用：`& 'C:\Program Files\GitHub CLI\gh.exe' --version`。登录和授权由用户自行完成，不在文件或 Git 中保存 Token。创建仓库时不额外生成 README、gitignore 或 License。
 

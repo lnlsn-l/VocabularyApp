@@ -2,13 +2,13 @@
 
 日期：2026-10-07（Asia/Shanghai）。项目：`D:\VocabularyApp`。仓库：`lnlsn-l/VocabularyApp`，默认分支 `main`。
 
-## 当前状态与账户限制
+## 当前状态与可见性
 
-目标地址为 `https://lnlsn-l.github.io/VocabularyApp/`，目前尚未部署成功。仓库为 Private，登录账户拥有 admin / push 权限，Actions 已启用且允许官方 Actions。读取 Pages API 返回 404，`has_pages=false`；尝试以 `build_type=workflow` 创建 Pages 时返回 HTTP 422：`Your current plan does not support GitHub Pages for this repository.`
+在线地址：[VocabularyApp](https://lnlsn-l.github.io/VocabularyApp/)。2026-10-07 已部署成功，并通过实际 HTTPS Chrome 验收。仓库为 Public，默认分支 main；Pages API 确认 `build_type=workflow`、`public=true`、`https_enforced=true`，html_url 与上述地址一致。成功工作流：[37570191550](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37570191550)。
 
-`GET /user` 未返回方案名称，不能据此断言具体订阅名称；上述创建 API 明确证明当前账户不具备此私有仓库的 Pages 能力。仓库可见性从未改变。
+首次准备时仓库为 Private，创建 Pages 返回 HTTP 422：`Your current plan does not support GitHub Pages for this repository.` API 未返回账户方案名称，未推断具体订阅级别。此前保持 Private 并完成全部准备后，用户明确回复“变成public即可”，才执行 Private → Public 变更并成功创建 Pages。源代码与 Git 历史因此公开，个人词库没有进入仓库或发布产物。
 
-[GitHub 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)规定：GitHub Free 支持公开仓库 Pages；私有仓库 Pages 需要 GitHub Pro、Team 等支持方案。可选择升级支持方案并保留 Private，或在用户明确授权后将仓库改为 Public 以使用免费 Pages。Public 会公开源代码和 Git 历史，而不只是网页，必须先由用户决定。不要自动改 visibility，也不要自动购买订阅。
+[GitHub 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)规定：GitHub Free 支持公开仓库 Pages；私有仓库 Pages 需要 GitHub Pro、Team 等支持方案。本次按用户明确授权使用 Public + 免费 Pages。以后不要未经授权更改 visibility 或购买订阅。
 
 ## 架构与路径
 
@@ -30,10 +30,10 @@ deploy job 依赖 build 成功：configure-pages → deploy-pages，环境名 `g
 
 只上传 `dist/`。不提交 dist，不上传浏览器 Profile、JSON、测试截图、trace、测试结果、依赖或整个工作目录。`scripts/check-dist.mjs` 仅允许 index.html、favicon.svg、assets 下的 JS/CSS，拒绝其他文件、链接、异常目录，校验 HTML 资源路径及常见凭据格式。此文件检查与构建过程共同确保浏览器个人词库不会被打包；不是对任意未来代码的数据保护保证。
 
-## 解除账户阻塞后的部署
+## 后续部署与手动重跑
 
-1. 保留 Private 并升级支持方案，或取得用户明确的 Public 授权并执行相应变更。
-2. 仓库 Settings → Pages → Source 选择 GitHub Actions；也可执行 `gh api --method POST repos/lnlsn-l/VocabularyApp/pages -f build_type=workflow`。
+1. 当前仓库已为 Public，Pages 已创建，无需再次创建或改变可见性。
+2. 仓库 Settings → Pages → Source 应保持 GitHub Actions，HTTPS 已启用。
 3. push 已通过检查的 main，或在 Actions 中选择“Deploy VocabularyApp to GitHub Pages”→“Run workflow”。CLI 可使用 `gh workflow run deploy-pages.yml --ref main`。
 4. 使用 `gh run list --workflow deploy-pages.yml` 与 `gh run view <run-id> --log-failed` 检查结果；需要重跑时用 Actions 的“Re-run jobs”或 `gh run rerun <run-id>`。
 5. 用 Pages API 返回的 `html_url` 和工作流 page_url 核对最终 HTTPS 地址。打开页面并执行下述真实环境验证，不能只看 Actions 绿色。
@@ -59,7 +59,7 @@ npm run test:pages
 Remove-Item Env:\VOCABULARY_PAGES_URL
 ```
 
-同一套测试验证首次空库、JS/CSS/favicon、页面与资源错误、无第三方请求、CRUD、搜索、A–Z/#、四种排序、桌面与 360px 布局、刷新和标签页／浏览器进程重开、两个独立 Profile、localhost 导出到目标 Origin 导入、全部元数据一致、目标导出到 localhost 导入、重复与非法 JSON。真实 HTTPS 验证必须在网站上线后执行并另行记录，当前本地模拟不算完成线上验收。
+同一套测试验证首次空库、JS/CSS/favicon、页面与资源错误、无第三方请求、CRUD、搜索、A–Z/#、四种排序、桌面与 360px 布局、刷新和标签页／浏览器进程重开、两个独立 Profile、localhost 导出到目标 Origin 导入、全部元数据一致、目标导出到 localhost 导入、重复与非法 JSON。2026-10-07 对实际 `https://lnlsn-l.github.io/VocabularyApp/` 执行上述环境变量命令，4 项全部通过；线上 1440px/360px 页面、表单和详情截图已检查。后续应用变更仍应按需重新验收。
 
 ## 迁移和备份
 
@@ -72,7 +72,7 @@ Repository 保存代码，Pages 提供网页，IndexedDB 保存用户数据；�
 | 现象 | 检查与处理 |
 | --- | --- |
 | Private 创建 Pages 返回 422 | 当前方案不支持，按上述选择处理，不能擅自改 Public |
-| configure-pages 返回 404 | 检查 Settings → Pages 的 source 和账户资格；当前未创建站点时预期如此 |
+| configure-pages 返回 404 | 检查 Settings → Pages 的 source 和账户资格，确认站点仍存在 |
 | Actions 失败 | 查具体失败 job／日志，修复并重新测试；不能绕过质量门槛 |
 | JS/CSS/favicon 404 或空白 | 检查 build/preview base 和 `/VocabularyApp/` 的大小写，运行 check:dist |
 | Pages 暂时 404 | 核对 API 地址、工作流状态、部署时间；不能宣称已经上线 |
