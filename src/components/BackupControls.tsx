@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type RefObject } from 'react'
 import { vocabularyService } from '../services/vocabularyService'
 import { downloadBackup } from '../utils/backup'
 import { errorMessage, VocabularyError } from '../utils/validation'
 
-interface Props { disabled: boolean; onNotice: (message: string) => void }
-export function BackupControls({ disabled, onNotice }: Props) {
-  const ref = useRef<HTMLInputElement>(null)
+interface Props { disabled: boolean; onNotice: (message: string) => void; inputRef?: RefObject<HTMLInputElement | null> }
+export function BackupControls({ disabled, onNotice, inputRef }: Props) {
+  const internalRef = useRef<HTMLInputElement>(null)
+  const ref = inputRef ?? internalRef
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   async function perform(action: () => Promise<void>) {

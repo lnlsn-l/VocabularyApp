@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
 test('开发服务器能够打开应用', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await expect(page.getByRole('heading', { name: 'Vocabulary', exact: true })).toBeVisible()
 })
 
@@ -11,7 +11,7 @@ test('关闭整个浏览器进程后重新打开，词库仍存在', async ({ pl
   let context = await playwright.chromium.launchPersistentContext(profile, { channel: 'chrome', headless: true })
   try {
     let page = await context.newPage()
-    await page.goto('http://localhost:5173')
+    await page.goto(String(testInfo.project.use.baseURL))
     await page.getByRole('button', { name: '＋ 添加词条' }).click()
     await page.getByLabel('英文词汇 / 短语').fill('substrate')
     await page.getByLabel('中文释义').fill('衬底')
@@ -20,14 +20,14 @@ test('关闭整个浏览器进程后重新打开，词库仍存在', async ({ pl
     await context.close()
     context = await playwright.chromium.launchPersistentContext(profile, { channel: 'chrome', headless: true })
     page = await context.newPage()
-    await page.goto('http://localhost:5173')
+    await page.goto(String(testInfo.project.use.baseURL))
     await expect(page.getByRole('article', { name: 'substrate' })).toContainText('衬底')
   } finally { await context.close() }
 })
 
-test('移动端表单、长词条、键盘取消及桌面布局', async ({ page }) => {
+test('移动端表单、长词条、键盘取消及桌面布局', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 360, height: 780 })
-  await page.goto('/')
+  await page.goto('./')
   await page.getByRole('button', { name: '＋ 添加词条' }).click()
   await page.getByLabel('英文词汇 / 短语').fill('electromagnetic interference and signal integrity')
   await page.getByLabel('中文释义').fill('电磁干扰与信号完整性')
@@ -39,9 +39,9 @@ test('移动端表单、长词条、键盘取消及桌面布局', async ({ page 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await page.screenshot({ path: '.tools/mobile.png', fullPage: true })
+  await page.screenshot({ path: testInfo.outputPath('mobile.png'), fullPage: true })
   await page.setViewportSize({ width: 1440, height: 1000 })
-  await page.screenshot({ path: '.tools/desktop.png', fullPage: true })
+  await page.screenshot({ path: testInfo.outputPath('desktop.png'), fullPage: true })
 })
 
 test('存储初始化失败给出可读提示与重试', async ({ page }) => {
@@ -52,7 +52,7 @@ test('存储初始化失败给出可读提示与重试', async ({ page }) => {
       return open.call(this, name, version)
     }
   })
-  await page.goto('/')
+  await page.goto('./')
   await expect(page.getByRole('alert')).toContainText('无法读取本地词库')
   await expect(page.getByRole('button', { name: '重试', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '＋ 添加词条' })).toBeDisabled()
@@ -63,7 +63,7 @@ test('存储初始化失败给出可读提示与重试', async ({ page }) => {
 })
 
 test('写入失败保留表单内容并明确提示', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.getByRole('button', { name: '＋ 添加词条' }).click()
   await page.getByLabel('英文词汇 / 短语').fill('substrate')
   await page.getByLabel('中文释义').fill('衬底')
@@ -75,7 +75,7 @@ test('写入失败保留表单内容并明确提示', async ({ page }) => {
 })
 
 test('JSON 下载、删除后恢复、重复导入和非法数据处理', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.getByRole('button', { name: '＋ 添加词条' }).click()
   await page.getByLabel('英文词汇 / 短语').fill('substrate')
   await page.getByLabel('中文释义').fill('衬底')
@@ -102,7 +102,7 @@ test('JSON 下载、删除后恢复、重复导入和非法数据处理', async 
 })
 
 test('英文、中文和备注实时搜索', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.evaluate(async () => {
     const path = '/src/services/vocabularyService.ts'
     const { vocabularyService } = await import(path)
@@ -125,7 +125,7 @@ test('英文、中文和备注实时搜索', async ({ page }) => {
 })
 
 test('真实 IndexedDB 在页面刷新后保留数据', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.evaluate(async () => {
     const path = '/src/services/vocabularyService.ts'
     const { vocabularyService } = await import(path)
@@ -141,7 +141,7 @@ test('真实 IndexedDB 在页面刷新后保留数据', async ({ page }) => {
 })
 
 test('添加、重复检测、编辑、状态切换和删除确认', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.getByRole('button', { name: '＋ 添加词条' }).click()
   await page.getByLabel('英文词汇 / 短语').fill(' substrate ')
   await page.getByLabel('中文释义').fill('衬底')
@@ -174,7 +174,7 @@ test('添加、重复检测、编辑、状态切换和删除确认', async ({ pa
 })
 
 test('仅真正打开详情时增加查看次数', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.getByRole('button', { name: '＋ 添加词条' }).click()
   await page.getByLabel('英文词汇 / 短语').fill('substrate')
   await page.getByLabel('中文释义').fill('衬底')
@@ -193,7 +193,7 @@ test('仅真正打开详情时增加查看次数', async ({ page }) => {
 })
 
 test('字母、非字母和学习状态组合筛选', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.evaluate(async () => {
     const path = '/src/services/vocabularyService.ts'
     const { vocabularyService } = await import(path)

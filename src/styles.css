@@ -29,6 +29,10 @@ h1 { margin: 0; font-size: 42px; line-height: 1.15; font-weight: 650; letter-spa
 .storage-row { margin-bottom: 24px; padding: 16px 0 0; border-top: 1px solid var(--border); }
 .storage-note { margin: 0; font-size: 12px; }
 .storage-note::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #4a8867; margin-right: 8px; }
+.data-notice { margin: -8px 0 24px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.data-notice summary { cursor: pointer; width: fit-content; color: var(--green); }
+.data-notice summary:focus-visible { outline: 3px solid #7ba68b; outline-offset: 3px; }
+.data-notice p { max-width: 80ch; margin: 10px 0; }
 .backup-buttons { display: flex; gap: 8px; }
 .backup-buttons button { background: transparent; font-size: 12px; padding: 8px 12px; }
 .backup-controls { max-width: 65%; }
