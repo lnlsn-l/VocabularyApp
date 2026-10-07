@@ -44,8 +44,12 @@ export class LocalVocabularyRepository implements VocabularyRepository {
   }
 
   subscribeBackup(next: (summary: BackupSummary) => void, error: () => void) {
-    const subscription = liveQuery(() => this.backupSummary()).subscribe({ next, error })
-    return () => subscription.unsubscribe()
+    let cancelled = false
+    let subscription: { unsubscribe(): void } | undefined
+    void this.db.open().then(() => {
+      if (!cancelled) subscription = liveQuery(() => this.backupSummary()).subscribe({ next, error })
+    }).catch(() => { if (!cancelled) error() })
+    return () => { cancelled = true; subscription?.unsubscribe() }
   }
 
   async markExport(snapshot: ExportSnapshot, requestedAt: string) {

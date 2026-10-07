@@ -48,7 +48,7 @@ test('存储初始化失败给出可读提示与重试', async ({ page }) => {
   await page.addInitScript(() => {
     const open = IDBFactory.prototype.open
     IDBFactory.prototype.open = function (name, version) {
-      if (localStorage.getItem('allow-storage') !== 'yes') throw new DOMException('blocked', 'SecurityError')
+      if (localStorage.getItem('VocabularyApp.test.allow-storage') !== 'yes') throw new DOMException('blocked', 'SecurityError')
       return open.call(this, name, version)
     }
   })
@@ -56,7 +56,7 @@ test('存储初始化失败给出可读提示与重试', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('无法读取本地词库')
   await expect(page.getByRole('button', { name: '重试', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '＋ 添加词条' })).toBeDisabled()
-  await page.evaluate(() => localStorage.setItem('allow-storage', 'yes'))
+  await page.evaluate(() => localStorage.setItem('VocabularyApp.test.allow-storage', 'yes'))
   await page.getByRole('button', { name: '重试', exact: true }).click()
   await expect(page.getByRole('alert')).toHaveCount(0)
   await expect(page.getByRole('button', { name: '＋ 添加词条' })).toBeEnabled()

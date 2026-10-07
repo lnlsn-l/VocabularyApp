@@ -48,7 +48,7 @@ export function ImportPreviewDialog({ fileName, document, initialPreview, onClos
       <div><dt>预计重复</dt><dd>{analysis.duplicates}</dd></div>
       <div><dt>预计无效</dt><dd>{analysis.invalid}</dd></div>
     </dl>
-    <p className="muted">重复细分：与当前库同名 {analysis.existingDuplicates}，与文件内已接受的新词同名 {analysis.fileDuplicates}。重复中存在差异 {analysis.differences.length} 条（重复的子集）。ID 冲突 {analysis.idConflicts} 条，将分配新 ID。</p>
+    <p className="muted">重复细分：文件首条有效记录与当前库同名 {analysis.existingDuplicates}，文件内同名的后续有效记录 {analysis.fileDuplicates}。重复中存在差异 {analysis.differences.length} 条（重复的子集）。ID 冲突 {analysis.idConflicts} 条，将分配新 ID。</p>
     <p>同名词保留当前词库版本，不覆盖。文件内新词重复时保留首条有效记录。选择、查看或取消预览不会写入词库。</p>
     {analysis.differences.length > 0 && <details className="import-differences">
       <summary>查看重复词差异（{analysis.differences.length}）</summary>

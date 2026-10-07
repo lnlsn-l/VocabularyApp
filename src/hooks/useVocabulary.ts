@@ -15,5 +15,5 @@ export function useVocabulary() {
   }, message => { setError(message); setLoading(false) }), [attempt])
 
   function retry() { setLoading(true); setError(''); setAttempt(value => value + 1) }
-  return { entries, loading, error, retry }
+  return { entries, loading, error, retry, attempt }
 }

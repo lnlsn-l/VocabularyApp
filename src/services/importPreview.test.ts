@@ -91,3 +91,12 @@ it('全无效及全重复无写入，不制造待导出变化；非法外层不�
     await expect(service.previewImport(text)).rejects.toThrow()
   }
 })
+
+it('文件内重复已有词也单独识别，保留方始终是当前库', async () => {
+  const { service } = setup()
+  await service.create(input)
+  const [entry] = await service.list()
+  const prepared = await service.previewImport(createBackup([entry, { ...entry, word: ' SUBSTRATE ', meaning: '重复差异' }]))
+  expect(prepared.preview.analysis).toMatchObject({ imported: 0, duplicates: 2, existingDuplicates: 1, fileDuplicates: 1 })
+  expect(prepared.preview.analysis.differences[0]).toMatchObject({ source: 'current', retained: entry })
+})

@@ -26,6 +26,7 @@ export type ConfirmImportResult = { changed: true; preview: ImportPreview } | { 
 export function analyzeImport(document: ParsedBackup, current: VocabularyEntry[]) {
   const retained = new Map(current.map(entry => [normalizeWord(entry.word), { entry, source: 'current' as 'current' | 'file' }]))
   const ids = new Set(current.map(entry => entry.id))
+  const seenInFile = new Set<string>()
   const additions: VocabularyEntry[] = []
   const analysis: ImportAnalysis = {
     currentTotal: current.length, validTotal: document.entries.length, rawTotal: document.rawTotal,
@@ -37,8 +38,8 @@ export function analyzeImport(document: ParsedBackup, current: VocabularyEntry[]
     const existing = retained.get(key)
     if (existing) {
       analysis.duplicates++
-      if (existing.source === 'current') analysis.existingDuplicates++
-      else analysis.fileDuplicates++
+      if (seenInFile.has(key)) analysis.fileDuplicates++
+      else analysis.existingDuplicates++
       const fields = differenceFields.filter(field => existing.entry[field] !== incoming[field])
       if (fields.length) analysis.differences.push({ word: incoming.word, source: existing.source, retained: existing.entry, incoming, fields })
     } else {
@@ -48,6 +49,7 @@ export function analyzeImport(document: ParsedBackup, current: VocabularyEntry[]
       additions.push(incoming)
       analysis.imported++
     }
+    seenInFile.add(key)
   }
   return { analysis, additions }
 }

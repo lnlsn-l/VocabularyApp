@@ -1,7 +1,8 @@
-import { useState, type SubmitEvent } from 'react'
+import { useRef, useState, type SubmitEvent } from 'react'
 import type { VocabularyEntry, VocabularyInput } from '../types/vocabulary'
 import { errorMessage, VocabularyError } from '../utils/validation'
 import { Modal } from './Modal'
+import { useCompositionGuard } from '../hooks/useCompositionGuard'
 
 interface Props {
   entry?: VocabularyEntry
@@ -19,21 +20,35 @@ export function WordForm({ entry, initialWord = '', onClose, onSave, onExisting 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [existingId, setExistingId] = useState<string>()
+  const [notice, setNotice] = useState('')
+  const wordRef = useRef<HTMLInputElement>(null)
+  const saving = useRef(false)
+  const composition = useCompositionGuard()
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (busy) return
-    setBusy(true); setError(''); setExistingId(undefined)
-    try { await onSave(input); onClose() }
+    if (saving.current || composition.blocked()) return
+    const keepOpen = !entry && (event.nativeEvent.submitter as HTMLButtonElement | null)?.value === 'continue'
+    saving.current = true
+    setBusy(true); setError(''); setExistingId(undefined); setNotice('')
+    try {
+      await onSave(input)
+      if (keepOpen) {
+        setInput({ word: '', meaning: '', note: '', status: 'learning' })
+        setNotice('已保存，可以继续添加下一条。')
+        requestAnimationFrame(() => wordRef.current?.focus())
+      } else onClose()
+    }
     catch (cause) {
       setError(errorMessage(cause))
       if (cause instanceof VocabularyError) setExistingId(cause.existingId)
-    } finally { setBusy(false) }
+    } finally { saving.current = false; setBusy(false) }
   }
   return <Modal title={entry ? '编辑词条' : '添加词条'} onClose={onClose} busy={busy}>
-    <form onSubmit={submit}>
+    <form onSubmit={submit} onCompositionStart={composition.start} onCompositionEnd={composition.end}
+      onKeyDownCapture={event => { if (event.key === 'Enter' && composition.blocked(event.nativeEvent)) event.preventDefault() }}>
       <fieldset disabled={busy}>
         <label>英文词汇 / 短语 <span className="required">*</span>
-          <input autoFocus required value={input.word} placeholder="例如 substrate" onChange={event => setInput({ ...input, word: event.target.value })} />
+          <input ref={wordRef} autoFocus required value={input.word} placeholder="例如 substrate" onChange={event => setInput({ ...input, word: event.target.value })} />
         </label>
         <label>中文释义 <span className="required">*</span>
           <textarea required rows={3} value={input.meaning} placeholder="输入在当前文献中的含义" onChange={event => setInput({ ...input, meaning: event.target.value })} />
@@ -50,8 +65,10 @@ export function WordForm({ entry, initialWord = '', onClose, onSave, onExisting 
       {error && <div className="form-error" role="alert">{error}
         {existingId && <button type="button" className="text-button" onClick={() => onExisting(existingId)}>查看已有词条</button>}
       </div>}
+      {notice && <p role="status" className="notice">{notice}</p>}
       <div className="modal-actions"><button type="button" onClick={onClose} disabled={busy}>取消</button>
         <button type="submit" className="primary" disabled={busy}>{busy ? '保存中…' : '保存'}</button>
+        {!entry && <button type="submit" value="continue" disabled={busy}>保存并继续添加</button>}
       </div>
     </form>
   </Modal>

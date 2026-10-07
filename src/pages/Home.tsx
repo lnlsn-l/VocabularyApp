@@ -8,6 +8,7 @@ import { WordList } from '../components/WordList'
 import { WordDetail } from '../components/WordDetail'
 import { BackupControls } from '../components/BackupControls'
 import { DataNotice } from '../components/DataNotice'
+import { FilterSummary } from '../components/FilterSummary'
 import { useVocabulary } from '../hooks/useVocabulary'
 import { vocabularyService } from '../services/vocabularyService'
 import type { VocabularyEntry, VocabularyInput } from '../types/vocabulary'
@@ -15,7 +16,7 @@ import { errorMessage } from '../utils/validation'
 import { filterEntries, type SortValue, type StatusFilterValue } from '../utils/search'
 
 export function Home() {
-  const { entries, loading, error, retry } = useVocabulary()
+  const { entries, loading, error, retry, attempt } = useVocabulary()
   const importInput = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<{ entry?: VocabularyEntry } | null>(null)
   const [deleting, setDeleting] = useState<VocabularyEntry | null>(null)
@@ -56,7 +57,7 @@ export function Home() {
       <button className="primary" disabled={loading || !!error} onClick={() => setForm({})}>＋ 添加词条</button>
     </header>
     <div className="storage-row"><p className="storage-note">本地保存 · 当前浏览器的独立词库</p>
-      <BackupControls disabled={loading || !!error || busy} onNotice={setNotice} inputRef={importInput} /></div>
+      <BackupControls disabled={loading || !!error || busy} onNotice={setNotice} inputRef={importInput} retryToken={attempt} /></div>
     <DataNotice />
     <SearchBar value={query} onChange={setQuery} />
     <div className="filter-row"><StatusFilter value={status} entries={entries} onChange={setStatus} />
@@ -72,18 +73,20 @@ export function Home() {
         <option value="alphabet">英文 A–Z</option><option value="created">最近添加</option>
         <option value="viewed">最近查看</option><option value="count">查看次数最多</option>
       </select></div>
+      <FilterSummary query={query} status={status} letter={letter} sort={sort} count={visible.length}
+        onQuery={() => setQuery('')} onStatus={() => setStatus('all')} onLetter={() => setLetter('all')} onClear={clearFilters} />
       {loading ? <p role="status">正在读取本地词库…</p> : !error && (visible.length ?
         <WordList entries={visible} busy={busy} onEdit={entry => setForm({ entry })} onDelete={entry => { setActionError(''); setDeleting(entry) }} onOpen={entry => void open(entry.id)}
           onStatus={entry => void run(() => vocabularyService.setStatus(entry.id, entry.status === 'learning' ? 'mastered' : 'learning'), '学习状态已更新。')} /> :
         <div className="empty-state"><span className="empty-icon" aria-hidden="true">{letter === 'all' ? 'Aa' : letter}</span>
           <h3>{entries.length ? '没有找到匹配的词条' : '从阅读中遇到的第一个词开始'}</h3><p>{entries.length ? '试试其他关键词，或清除字母和状态筛选。' : '添加英文词汇、术语或短语，写下属于你的中文释义。'}</p>
           <div className="empty-actions">{entries.length > 0 && <button onClick={clearFilters}>清除筛选</button>}
-            <button className="primary" onClick={() => setForm({})}>{entries.length ? '添加词条' : '添加第一个词条'}</button>
+            <button className="primary" onClick={() => setForm({})}>{query.trim() ? `添加 “${query.trim()}”` : entries.length ? '添加词条' : '添加第一个词条'}</button>
             {!entries.length && <button onClick={() => importInput.current?.click()}>导入 JSON 备份</button>}
           </div>{!entries.length && <p>数据保存在当前浏览器。如果你之前使用过 VocabularyApp，可导入旧地址导出的 JSON 备份。</p>}</div>)}
     </section>
     <footer><span>为英文文献阅读而积累。</span><span>数据保存在此浏览器，请定期导出备份。</span></footer>
-    {form && <WordForm key={form.entry?.id ?? 'new'} entry={form.entry} initialWord={/^[\x20-\x7e]+$/.test(query) ? query.trim() : ''} onClose={() => setForm(null)} onSave={save} onExisting={id => void open(id)} />}
+    {form && <WordForm key={form.entry?.id ?? 'new'} entry={form.entry} initialWord={query.trim()} onClose={() => setForm(null)} onSave={save} onExisting={id => void open(id)} />}
     {detail && <WordDetail entry={detail} onClose={() => setDetailId(null)} onEdit={() => { setDetailId(null); setForm({ entry: detail }) }} />}
     {deleting && <ConfirmDialog word={deleting.word} busy={busy} error={actionError} onClose={() => { setDeleting(null); setActionError('') }} onConfirm={() => void remove()} />}
   </main>
