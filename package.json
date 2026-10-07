@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:pages": "playwright test --config playwright.pages.config.ts",
+    "check:dist": "node scripts/check-dist.mjs",
     "lint": "eslint ."
   },
   "dependencies": {

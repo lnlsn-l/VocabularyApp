@@ -1,0 +1,197 @@
+import { expect, test, type Page } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
+import type { VocabularyEntry } from '../src/types/vocabulary'
+
+async function add(page: Page, word: string, meaning: string, note = '', mastered = false) {
+  await page.getByRole('button', { name: '＋ 添加词条' }).click()
+  await page.getByLabel('英文词汇 / 短语').fill(word)
+  await page.getByLabel('中文释义').fill(meaning)
+  await page.getByLabel('备注').fill(note)
+  if (mastered) await page.getByRole('dialog').getByRole('combobox').selectOption('mastered')
+  await page.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+}
+
+async function exportFile(page: Page) {
+  const downloading = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出词库', exact: true }).click()
+  const download = await downloading
+  expect(download.suggestedFilename()).toMatch(/^vocabulary-backup-\d{4}-\d{2}-\d{2}\.json$/)
+  const buffer = await readFile((await download.path())!)
+  const backup = JSON.parse(buffer.toString()) as { version: number; app: string; entries: VocabularyEntry[] }
+  expect(backup).toMatchObject({ version: 1, app: 'VocabularyApp', exportedAt: expect.any(String) })
+  expect(buffer.toString()).not.toContain('normalizedWord')
+  return { buffer, backup }
+}
+
+async function importFile(page: Page, buffer: Buffer, empty = false) {
+  // 验证空状态入口与顶部入口都打开同一个浏览器文件选择器。
+  const choosing = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: empty ? '导入 JSON 备份' : '导入 JSON', exact: true }).click()
+  const chooser = await choosing
+  await chooser.setFiles({ name: 'vocabulary-backup-test.json', mimeType: 'application/json', buffer })
+}
+
+test('生产子路径资源、样式、图标和数据说明，无第三方请求', async ({ page, baseURL }) => {
+  const failures: string[] = []
+  const errors: string[] = []
+  const origin = new URL(baseURL!).origin
+  page.on('response', response => { if (response.status() >= 400) failures.push(`${response.status()} ${response.url()}`) })
+  page.on('requestfailed', request => failures.push(request.url()))
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
+  page.on('request', request => { if (new URL(request.url()).origin !== origin) failures.push(`External request: ${request.url()}`) })
+  await page.goto('./')
+  await expect(page.getByRole('heading', { name: 'Vocabulary', exact: true })).toBeVisible()
+  await expect(page.getByRole('article')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '添加第一个词条' })).toBeVisible()
+  const iconURL = await page.locator('link[rel="icon"]').evaluate((node: HTMLLinkElement) => node.href)
+  expect(new URL(iconURL).pathname).toBe('/VocabularyApp/favicon.svg')
+  const icon = await page.request.get(iconURL)
+  expect(icon.ok()).toBe(true)
+  expect(await icon.text()).toContain('<svg')
+  const resources = await page.evaluate(() => [...document.querySelectorAll<HTMLScriptElement | HTMLLinkElement>('script[src], link[rel="stylesheet"]')].map(node => 'src' in node ? node.src : node.href))
+  expect(resources.length).toBeGreaterThanOrEqual(2)
+  for (const url of resources) expect(new URL(url).pathname).toMatch(/^\/VocabularyApp\/assets\//)
+  await expect(page.locator('.primary').first()).toHaveCSS('background-color', 'rgb(36, 91, 72)')
+  await page.getByText('数据说明', { exact: true }).click()
+  await expect(page.getByText(/你的词库保存在当前浏览器的 IndexedDB/)).toBeVisible()
+  await expect(page.getByText(/不同设备、浏览器或用户配置文件拥有独立词库/)).toBeVisible()
+  expect(await page.evaluate(() => navigator.serviceWorker.getRegistrations().then(rows => rows.length))).toBe(0)
+  expect(failures).toEqual([])
+  expect(errors).toEqual([])
+})
+
+test('生产版本 CRUD、搜索、分类、所有排序及 360px 布局', async ({ page }, testInfo) => {
+  await page.goto('./')
+  await expect(page.getByRole('button', { name: '＋ 添加词条' })).toBeEnabled()
+  await add(page, '3D transistor', '三维晶体管')
+  await add(page, 'substrate', '衬底', '半导体论文')
+  await add(page, 'electromagnetic interference', '电磁干扰', '微波论文')
+  const titles = page.locator('.word-title')
+  await expect(titles).toHaveText(['3D transistor', 'electromagnetic interference', 'substrate'])
+  await page.getByLabel('词条排序').selectOption('created')
+  await expect(titles).toHaveText(['electromagnetic interference', 'substrate', '3D transistor'])
+  for (const word of ['substrate', 'substrate', 'electromagnetic interference']) {
+    await page.getByRole('button', { name: word, exact: true }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByRole('button', { name: '关闭', exact: true }).click()
+  }
+  await page.getByLabel('词条排序').selectOption('viewed')
+  await expect(titles).toHaveText(['electromagnetic interference', 'substrate', '3D transistor'])
+  await page.getByLabel('词条排序').selectOption('count')
+  await expect(titles).toHaveText(['substrate', 'electromagnetic interference', '3D transistor'])
+  const card = page.getByRole('article', { name: 'substrate', exact: true })
+  await card.getByRole('button', { name: '编辑', exact: true }).click()
+  await page.getByLabel('中文释义').fill('衬底；基板')
+  await page.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(card).toContainText('衬底；基板')
+  for (const query of ['strate', 'SUB', '衬底', '半导体']) {
+    await page.getByRole('searchbox').fill(query)
+    await expect(page.getByRole('article')).toHaveCount(1)
+    await expect(card).toBeVisible()
+  }
+  await page.getByRole('searchbox').fill('')
+  await card.getByRole('button', { name: '标记已掌握' }).click()
+  await expect(card).toHaveCount(0)
+  await page.getByRole('group').getByRole('button', { name: '已掌握' }).click()
+  await expect(card).toBeVisible()
+  await card.getByRole('button', { name: '重新学习' }).click()
+  await page.locator('.filter-row').getByRole('button', { name: '清除筛选', exact: true }).click()
+  await page.getByRole('navigation').getByRole('button', { name: 'E', exact: true }).click()
+  await expect(titles).toHaveText(['electromagnetic interference'])
+  await page.getByRole('navigation').getByRole('button', { name: '#', exact: true }).click()
+  await expect(titles).toHaveText(['3D transistor'])
+  await page.locator('.filter-row').getByRole('button', { name: '清除筛选', exact: true }).click()
+  for (const width of [1440, 360]) {
+    await page.setViewportSize({ width, height: 900 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.getByText('数据说明', { exact: true }).click()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: testInfo.outputPath(`pages-${width}.png`), fullPage: true })
+    await card.getByRole('button', { name: '编辑', exact: true }).click()
+    expect(await page.getByRole('dialog').evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true)
+    await page.screenshot({ path: testInfo.outputPath(`form-${width}.png`) })
+    await page.keyboard.press('Escape')
+    await card.getByRole('button', { name: 'substrate', exact: true }).click()
+    expect(await page.getByRole('dialog').evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true)
+    await page.screenshot({ path: testInfo.outputPath(`detail-${width}.png`) })
+    await page.keyboard.press('Escape')
+  }
+  await card.getByRole('button', { name: '删除', exact: true }).click()
+  await page.getByRole('button', { name: '取消', exact: true }).click()
+  await expect(card).toBeVisible()
+  await card.getByRole('button', { name: '删除', exact: true }).click()
+  await page.getByRole('button', { name: '永久删除', exact: true }).click()
+  await expect(card).toHaveCount(0)
+})
+
+test('生产版本刷新、重开标签页、浏览器进程持久化和独立 Profile 隔离', async ({ playwright, baseURL }, testInfo) => {
+  const profile = testInfo.outputPath('profile-a')
+  let first = await playwright.chromium.launchPersistentContext(profile, { channel: 'chrome', headless: true })
+  try {
+    let page = await first.newPage()
+    await page.goto(baseURL!)
+    await expect(page.getByRole('button', { name: '＋ 添加词条' })).toBeEnabled()
+    await expect(page.getByRole('article')).toHaveCount(0)
+    await add(page, 'substrate', '衬底')
+    await page.reload()
+    await expect(page.getByRole('article', { name: 'substrate' })).toContainText('衬底')
+    await page.close()
+    page = await first.newPage()
+    await page.goto(baseURL!)
+    await expect(page.getByRole('article', { name: 'substrate' })).toBeVisible()
+    await first.close()
+    first = await playwright.chromium.launchPersistentContext(profile, { channel: 'chrome', headless: true })
+    page = await first.newPage()
+    await page.goto(baseURL!)
+    await expect(page.getByRole('article', { name: 'substrate' })).toBeVisible()
+    const second = await playwright.chromium.launchPersistentContext(testInfo.outputPath('profile-b'), { channel: 'chrome', headless: true })
+    try {
+      const independent = await second.newPage()
+      await independent.goto(baseURL!)
+      await expect(independent.getByRole('button', { name: '＋ 添加词条' })).toBeEnabled()
+      await expect(independent.getByRole('article')).toHaveCount(0)
+      await add(independent, 'pages-test-word', '另一位用户的测试词条')
+      await page.reload()
+      await expect(page.getByRole('article')).toHaveCount(1)
+      await expect(page.getByRole('article', { name: 'pages-test-word' })).toHaveCount(0)
+    } finally { await second.close() }
+  } finally { await first.close() }
+})
+
+test('localhost JSON 迁移、完整元数据恢复、反向导出和重复导入', async ({ page, context, baseURL }) => {
+  expect(new URL(baseURL!).origin).not.toBe('http://localhost:5173')
+  const source = await context.newPage()
+  await source.goto('http://localhost:5173/')
+  await expect(source.getByRole('button', { name: '＋ 添加词条' })).toBeEnabled()
+  await add(source, 'substrate', '衬底', '迁移验证备注')
+  await add(source, 'electromagnetic interference', '电磁干扰', '微波语境')
+  await add(source, 'carrier mobility', '载流子迁移率', '保留学习状态', true)
+  await source.getByRole('button', { name: 'substrate', exact: true }).click()
+  await source.getByRole('button', { name: '关闭', exact: true }).click()
+  const exported = await exportFile(source)
+  expect(exported.backup.entries).toHaveLength(3)
+  expect(exported.backup.entries.find(row => row.word === 'substrate')).toMatchObject({ searchCount: 1, lastSearchedAt: expect.any(String) })
+  await page.goto('./')
+  await expect(page.getByRole('button', { name: '添加第一个词条' })).toBeVisible()
+  await importFile(page, exported.buffer, true)
+  await expect(page.getByText('成功导入：3；重复跳过：0；无效数据：0。')).toBeVisible()
+  await page.locator('.filter-row').getByRole('button', { name: '清除筛选', exact: true }).click()
+  await expect(page.getByRole('article')).toHaveCount(3)
+  const restored = await exportFile(page)
+  const ordered = (entries: VocabularyEntry[]) => [...entries].sort((a, b) => a.id.localeCompare(b.id))
+  expect(ordered(restored.backup.entries)).toEqual(ordered(exported.backup.entries))
+  await add(page, 'pages-test-word', '在线版本新增词', '反向导出')
+  const reverse = await exportFile(page)
+  expect(reverse.backup.entries).toHaveLength(4)
+  await importFile(source, reverse.buffer)
+  await expect(source.getByText('成功导入：1；重复跳过：3；无效数据：0。')).toBeVisible()
+  const returned = await exportFile(source)
+  expect(ordered(returned.backup.entries)).toEqual(ordered(reverse.backup.entries))
+  await importFile(page, reverse.buffer)
+  await expect(page.getByText('成功导入：0；重复跳过：4；无效数据：0。')).toBeVisible()
+  await page.getByLabel('选择 JSON 备份').setInputFiles({ name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{') })
+  await expect(page.getByRole('alert')).toContainText('无法解析')
+  await expect(page.getByRole('article')).toHaveCount(4)
+})
