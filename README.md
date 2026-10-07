@@ -205,7 +205,7 @@ Remove-Item Env:\VOCABULARY_PREVIEW_TEST
 
 ## 自动部署
 
-`.github/workflows/deploy-pages.yml` 在应用修改推送到 `main` 或手动运行时执行 Node.js24/npm ci、lint、单元/代理测试、Worker实际模拟器、代理dry-run、开发浏览器、受控翻译开发/生产子路径测试、生产构建、Secret隔离、生产迁移和dist检查；全部通过才上传`dist/`。仅README/docs不重复部署。GitHub Actions公开变量`VITE_TRANSLATION_API_BASE_URL`只放真实HTTPS代理根地址；未配置时入口提示不可用。代理不由Pages工作流部署，有道Secret/CloudflareToken不进入工作流。既有发布方法见 [部署文档](docs/deployment.md)，新增代理部署见 [Part3方案](docs/stage2-part3-deployment-plan.md)。本阶段这些CI新增门槛已准备，远端新版本尚未运行。
+`.github/workflows/deploy-pages.yml` 在应用修改推送到 `main` 或`codex/**`、或手动运行时执行 Node.js24/npm ci、lint、单元/代理测试、Worker实际模拟器、代理dry-run、开发浏览器、受控翻译开发/生产子路径测试、生产构建、Secret隔离、生产迁移和dist检查；只有main全部通过才上传`dist/`并部署。功能分支只验证，README/docs不重复执行。GitHub Actions公开变量`VITE_TRANSLATION_API_BASE_URL`只放真实HTTPS代理根地址；未配置时入口提示不可用。代理不由Pages工作流部署，有道Secret/CloudflareToken不进入工作流。既有发布方法见 [部署文档](docs/deployment.md)，新增代理部署见 [Part3方案](docs/stage2-part3-deployment-plan.md)。本阶段实现提交已通过 [CI 37639627358](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37639627358)，Pages上传/deploy按分支门槛跳过；正式线上接入仍未验收。
 
 ## Git 与 GitHub
 
