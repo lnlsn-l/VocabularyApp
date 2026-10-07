@@ -36,6 +36,10 @@ h1 { margin: 0; font-size: 42px; line-height: 1.15; font-weight: 650; letter-spa
 .backup-buttons { display: flex; gap: 8px; }
 .backup-buttons button { background: transparent; font-size: 12px; padding: 8px 12px; }
 .backup-controls { max-width: 65%; }
+.backup-state { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.backup-state p { margin: 6px 0; }
+.backup-reminder { padding: 10px; background: #fff5dc; border-radius: 8px; }
+.backup-reminder button { font-size: 12px; padding: 5px 8px; margin: 6px 0 0 8px; }
 .search-bar { display: flex; align-items: center; background: white; border: 1px solid #b7cabc; border-radius: 12px; padding: 12px 18px; box-shadow: 0 2px 8px #23433205; }
 .search-bar:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px #245b4810; }
 .search-bar input { margin: 0; border: 0; background: transparent; min-width: 0; font-size: 16px; padding: 10px 12px; }

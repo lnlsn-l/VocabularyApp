@@ -3,7 +3,9 @@ import type { VocabularyRepository } from '../repositories/vocabularyRepository'
 import type { VocabularyInput, VocabularyStatus } from '../types/vocabulary'
 import type { VocabularyEntry } from '../types/vocabulary'
 import { validateInput, VocabularyError } from '../utils/validation'
-import { createBackup, parseBackup } from '../utils/backup'
+import { createBackup, parseBackup, downloadBackup } from '../utils/backup'
+import type { BackupSummary } from '../types/backupState'
+import { reminderResumeAt } from '../utils/backupReminder'
 
 export class VocabularyService {
   constructor(private readonly repository: VocabularyRepository) {}
@@ -50,6 +52,23 @@ export class VocabularyService {
   }
 
   async exportJSON() { return createBackup(await this.list()) }
+
+  backupSummary() { return this.perform(() => this.repository.backupSummary(), '无法读取备份状态，请重试。') }
+
+  subscribeBackup(next: (summary: BackupSummary) => void, error: () => void) {
+    return this.repository.subscribeBackup(next, error)
+  }
+
+  dismissReminder() {
+    return this.perform(() => this.repository.dismissReminder(reminderResumeAt()), '稍后提醒设置保存失败，请重试。')
+  }
+
+  async requestExport(download: (text: string) => void | Promise<void> = downloadBackup) {
+    const snapshot = await this.perform(() => this.repository.exportSnapshot(), '无法读取导出快照，请重试。')
+    const text = createBackup(snapshot.entries)
+    await this.perform(async () => { await download(text) }, '未能发起 JSON 下载，请重试。')
+    await this.perform(() => this.repository.markExport(snapshot, new Date().toISOString()), 'JSON 下载已发起，但备份状态记录失败，请重试并在下载列表确认文件。')
+  }
 
   async importJSON(text: string) {
     const { entries, invalid } = parseBackup(text)

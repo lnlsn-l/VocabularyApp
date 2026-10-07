@@ -1,4 +1,5 @@
 import type { ImportResult, VocabularyEntry, VocabularyInput, VocabularyStatus } from '../types/vocabulary'
+import type { BackupSummary, ExportSnapshot } from '../types/backupState'
 
 export interface VocabularyRepository {
   list(): Promise<VocabularyEntry[]>
@@ -9,4 +10,9 @@ export interface VocabularyRepository {
   remove(id: string): Promise<void>
   recordView(id: string, now: string): Promise<void>
   merge(entries: VocabularyEntry[]): Promise<Omit<ImportResult, 'invalid'>>
+  backupSummary(): Promise<BackupSummary>
+  subscribeBackup(next: (summary: BackupSummary) => void, error: () => void): () => void
+  exportSnapshot(): Promise<ExportSnapshot>
+  markExport(snapshot: ExportSnapshot, requestedAt: string): Promise<void>
+  dismissReminder(until: string): Promise<void>
 }
