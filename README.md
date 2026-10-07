@@ -6,6 +6,40 @@
 
 纯前端、本地优先，无登录、后端、云数据库和付费 API。日常操作不需要互联网；启动本地开发服务器或静态预览后即可使用。首次安装依赖需要网络。
 
+## 在线使用
+
+目标 HTTPS 地址：[VocabularyApp](https://lnlsn-l.github.io/VocabularyApp/)。**当前尚未上线**：2026-10-07，GitHub Pages 创建 API 返回 HTTP 422，当前账户方案不支持此 Private 仓库的 Pages。仓库可见性未改变。部署准备和本地验证进度见 [第二阶段第一部分记录](docs/stage2-part1.md)。
+
+部署完成并通过真实网页验收后，普通用户直接打开网址即可使用，无需安装 Node.js 或执行 npm。在线页面首次加载／重新加载需要网络；本阶段没有 PWA、Service Worker 或离线资源缓存。
+
+## 数据保存方式、上传与同步
+
+词库主数据保存在**当前浏览器的 IndexedDB**，不会自动上传到 GitHub、Pages、Actions 或远程数据库。没有分析、广告或跟踪服务。不同设备、浏览器和 Profile 不会自动同步；共用同一浏览器 Profile 的人也共用此词库。
+
+| 内容 | 职责 |
+| --- | --- |
+| GitHub Repository | 保存程序源代码和配置 |
+| GitHub Pages | 通过 HTTPS 提供构建后的 HTML、CSS、JS 和图标 |
+| IndexedDB | 在当前浏览器保存用户自己的词库 |
+| JSON | 由用户主动导出、保管、导入的备份与迁移文件 |
+
+部署工作流只上传 `dist/` 静态资源，发布前检查文件白名单；个人浏览器数据库、`backups/`、测试 Profile 和测试结果不进入部署产物。清理网站数据、删除 Profile 或系统重装等仍可能导致数据丢失，请定期导出 JSON。应用内“数据说明”可随时展开查看。
+
+## 从本地版本迁移到 GitHub Pages
+
+以下步骤在网站部署成功后执行。**localhost 与 Pages 属于不同 Origin，数据不会自动迁移。** 新网址的空词库不代表旧词库已删除。
+
+1. 用原来的浏览器和 Profile 打开旧地址 `http://localhost:5173/`。需要时先按下方步骤启动本地开发服务器。
+2. 点击“导出词库”，保存 `vocabulary-backup-YYYY-MM-DD.json`，建议再保留一份到其他磁盘。
+3. 打开已验证可访问的 [GitHub Pages 地址](https://lnlsn-l.github.io/VocabularyApp/)。
+4. 点击顶部“导入 JSON”，或首次空词库中的“导入 JSON 备份”，选择刚才的文件。
+5. 核对成功、重复、无效数量；切换到“全部”或“清除筛选”，核对总词条数，再抽查释义、备注、状态与查看统计。
+6. 确认迁移完成后再决定是否继续使用旧地址；保留 JSON 备份。本应用不会自动删除旧地址数据。
+
+导入仍为 version 1 的合并导入：同名词保留目标库现有内容，新增词保留备份元数据。在线版本导出的 JSON 也可以导回本地版本。换电脑、浏览器或 Profile 同样通过 JSON 迁移。网站不会自动寻找电脑中的文件或跨 Origin 读取旧词库。
+
+`http://localhost:5173` 与 `https://lnlsn-l.github.io` 的站点存储独立。`/VocabularyApp/` 是网页路径，不是存储隔离边界；同一 `https://lnlsn-l.github.io` Origin 下的其他路径通常共用站点存储。
+
 ## 快速开始
 
 项目直接位于 `D:\VocabularyApp`，没有额外的 `VocabularyApp` 子目录。建议使用 Node.js 24 LTS（本机验证版本 24.14.0）、npm 和 Git。
@@ -16,7 +50,7 @@ npm ci
 npm run dev
 ```
 
-打开 **http://localhost:5173**。开发与预览均固定 `localhost:5173`，端口冲突时会明确退出，不会悄悄切换到另一个端口造成“词库丢失”的误解。请关闭占用该端口的旧服务再启动。
+开发打开 **http://localhost:5173/**；构建后预览打开 **http://localhost:5173/VocabularyApp/**。两者仍是同一个 Origin，沿用原词库。端口冲突时会明确退出，不会悄悄切换到另一个端口造成“词库丢失”的误解。请关闭占用该端口的旧服务再启动。
 
 ```powershell
 npm run build
@@ -121,6 +155,8 @@ npm run build
 npm run lint
 npm test
 npm run test:e2e
+npm run check:dist
+npm run test:pages
 ```
 
 端到端测试使用已安装的 Google Chrome（`channel: chrome`），自动启动独立的 `localhost:5173` 开发服务器，执行前请关闭手动启动的同端口服务。测试使用独立浏览器配置文件，不会写入日常词库。详细覆盖与边界见 [docs/verification.md](docs/verification.md)。`test-results/`、截图和测试配置文件均被忽略。
@@ -132,6 +168,12 @@ $env:VOCABULARY_PREVIEW_TEST = '1'
 npm run test:e2e
 Remove-Item Env:\VOCABULARY_PREVIEW_TEST
 ```
+
+`test:pages` 验证构建后的 `/VocabularyApp/`，自动启动 5173 开发服务器和 5174 生产预览，通过独立 Profile 验证跨 Origin JSON 双向迁移与数据隔离。这是本地生产模拟，不能代替实际 Pages HTTPS 验收。真实部署后可设置 `VOCABULARY_PAGES_URL=https://lnlsn-l.github.io/VocabularyApp/` 再执行同一套测试。请先释放相关端口；测试不使用日常浏览器 Profile。
+
+## 自动部署
+
+`.github/workflows/deploy-pages.yml` 在应用修改推送到 `main` 或手动运行时执行 Node.js 24、`npm ci`、lint、单元测试、开发浏览器测试、生产构建、生产子路径／迁移测试及部署文件检查；全部通过后才上传 `dist/` 并尝试部署。仅 README/docs 的提交不重复部署。`dist/` 始终被 Git 忽略。部署方法、账户限制与故障排查见 [部署文档](docs/deployment.md)。
 
 ## Git 与 GitHub
 

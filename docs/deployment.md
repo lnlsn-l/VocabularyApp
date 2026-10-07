@@ -1,0 +1,84 @@
+# GitHub Pages 部署与本地数据迁移
+
+日期：2026-10-07（Asia/Shanghai）。项目：`D:\VocabularyApp`。仓库：`lnlsn-l/VocabularyApp`，默认分支 `main`。
+
+## 当前状态与账户限制
+
+目标地址为 `https://lnlsn-l.github.io/VocabularyApp/`，目前尚未部署成功。仓库为 Private，登录账户拥有 admin / push 权限，Actions 已启用且允许官方 Actions。读取 Pages API 返回 404，`has_pages=false`；尝试以 `build_type=workflow` 创建 Pages 时返回 HTTP 422：`Your current plan does not support GitHub Pages for this repository.`
+
+`GET /user` 未返回方案名称，不能据此断言具体订阅名称；上述创建 API 明确证明当前账户不具备此私有仓库的 Pages 能力。仓库可见性从未改变。
+
+[GitHub 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)规定：GitHub Free 支持公开仓库 Pages；私有仓库 Pages 需要 GitHub Pro、Team 等支持方案。可选择升级支持方案并保留 Private，或在用户明确授权后将仓库改为 Public 以使用免费 Pages。Public 会公开源代码和 Git 历史，而不只是网页，必须先由用户决定。不要自动改 visibility，也不要自动购买订阅。
+
+## 架构与路径
+
+源代码仓库 → Actions 检查与 Vite 构建 → Pages 静态产物 → 用户浏览器 → IndexedDB。无业务后端、账户、云数据库、云同步、追踪或第三方词典。
+
+`vite.config.ts` 集中管理 base：开发为 `/`，build 和 preview 为 `/VocabularyApp/`。本地开发仍为 `http://localhost:5173/`；生产预览为 `http://localhost:5173/VocabularyApp/`。二者协议、主机、端口相同，复用同一 Origin 的数据库。favicon 使用 `%BASE_URL%favicon.svg`，JS/CSS 路径由 Vite 生成，没有引入客户端路由。本阶段没有 manifest、PWA、Service Worker 或新业务字段。
+
+数据库仍为 `VocabularyDB` 的 `vocabulary` 表、Dexie version 1；JSON 仍为 version 1。未删除、重建或升级现有数据库。只改变构建与界面说明，不访问日常浏览器的数据文件。
+
+## 工作流
+
+路径：`.github/workflows/deploy-pages.yml`。触发：push 到 `main` 或 `workflow_dispatch`；仅 README/docs 的提交不重复部署应用。Node.js 使用 24，与本机已验收 Node.js 24.14.0 一致；依赖通过 `npm ci` 按现有锁文件安装。
+
+build job 顺序：checkout → setup-node → npm ci → lint → 单元测试 → 安装 Chrome → 开发 E2E → build → 生产子路径／迁移 E2E → check:dist → upload-pages-artifact。
+
+deploy job 依赖 build 成功：configure-pages → deploy-pages，环境名 `github-pages`，环境 URL 来自 `steps.deployment.outputs.page_url`。并发组 `pages`，不取消正在进行的部署。超时分别为 15、10 分钟。
+
+权限：全局 `contents: read`；deploy job 仅增加 `pages: write`、`id-token: write`，使用 Actions 的短期令牌和 OIDC，不写入 PAT、密码或 Token。官方 Actions 固定到已核对的提交 SHA，注释保留对应 major 版本。
+
+只上传 `dist/`。不提交 dist，不上传浏览器 Profile、JSON、测试截图、trace、测试结果、依赖或整个工作目录。`scripts/check-dist.mjs` 仅允许 index.html、favicon.svg、assets 下的 JS/CSS，拒绝其他文件、链接、异常目录，校验 HTML 资源路径及常见凭据格式。此文件检查与构建过程共同确保浏览器个人词库不会被打包；不是对任意未来代码的数据保护保证。
+
+## 解除账户阻塞后的部署
+
+1. 保留 Private 并升级支持方案，或取得用户明确的 Public 授权并执行相应变更。
+2. 仓库 Settings → Pages → Source 选择 GitHub Actions；也可执行 `gh api --method POST repos/lnlsn-l/VocabularyApp/pages -f build_type=workflow`。
+3. push 已通过检查的 main，或在 Actions 中选择“Deploy VocabularyApp to GitHub Pages”→“Run workflow”。CLI 可使用 `gh workflow run deploy-pages.yml --ref main`。
+4. 使用 `gh run list --workflow deploy-pages.yml` 与 `gh run view <run-id> --log-failed` 检查结果；需要重跑时用 Actions 的“Re-run jobs”或 `gh run rerun <run-id>`。
+5. 用 Pages API 返回的 `html_url` 和工作流 page_url 核对最终 HTTPS 地址。打开页面并执行下述真实环境验证，不能只看 Actions 绿色。
+
+## 验证命令与隔离环境
+
+```powershell
+npm run build
+npm run lint
+npm test
+npm run test:e2e
+npm run check:dist
+npm run test:pages
+```
+
+运行浏览器测试前释放 5173、5174；不复用手动启动的服务。所有测试使用独立的 Playwright Profile，数据仅为测试词条。没有使用用户日常词库做删除、导入或其他测试。
+
+`npm run test:pages` 默认目标为 `http://localhost:5174/VocabularyApp/`。实际部署后：
+
+```powershell
+$env:VOCABULARY_PAGES_URL = 'https://lnlsn-l.github.io/VocabularyApp/'
+npm run test:pages
+Remove-Item Env:\VOCABULARY_PAGES_URL
+```
+
+同一套测试验证首次空库、JS/CSS/favicon、页面与资源错误、无第三方请求、CRUD、搜索、A–Z/#、四种排序、桌面与 360px 布局、刷新和标签页／浏览器进程重开、两个独立 Profile、localhost 导出到目标 Origin 导入、全部元数据一致、目标导出到 localhost 导入、重复与非法 JSON。真实 HTTPS 验证必须在网站上线后执行并另行记录，当前本地模拟不算完成线上验收。
+
+## 迁移和备份
+
+先在原 `http://localhost:5173/`、原浏览器 Profile 中导出 JSON，保留文件，再打开部署后的 HTTPS 地址导入。切换到全部词条核对数量，并抽查释义、备注、状态、查看次数和时间。新词元数据保留，同名词仍按第一版规则跳过并保留目标库内容。确认无误后才决定旧地址是否继续使用；保留外部备份。网页不自动寻找文件，也不跨 Origin 读取 localhost。
+
+Repository 保存代码，Pages 提供网页，IndexedDB 保存用户数据；三者职责独立。不同浏览器/Profile 拥有独立数据，同一 Origin 下的路径通常不隔离存储；共享同一 Profile 的人共用词库。清理网站数据、删除 Profile、系统重装或存储回收可能丢失数据，需定期 JSON 备份。没有自动同步或 GitHub 词库备份。
+
+## 故障排查
+
+| 现象 | 检查与处理 |
+| --- | --- |
+| Private 创建 Pages 返回 422 | 当前方案不支持，按上述选择处理，不能擅自改 Public |
+| configure-pages 返回 404 | 检查 Settings → Pages 的 source 和账户资格；当前未创建站点时预期如此 |
+| Actions 失败 | 查具体失败 job／日志，修复并重新测试；不能绕过质量门槛 |
+| JS/CSS/favicon 404 或空白 | 检查 build/preview base 和 `/VocabularyApp/` 的大小写，运行 check:dist |
+| Pages 暂时 404 | 核对 API 地址、工作流状态、部署时间；不能宣称已经上线 |
+| 新地址没有旧词库 | Origin 不同，返回旧浏览器地址导出再导入，不要删除数据库 |
+| 导入后少于预期 | 核对重复／无效统计、学习状态和字母筛选，合并不会覆盖已有词 |
+| 本地 5173 被占用 | 确认占用进程，停止同项目旧服务后再测试，不自动换端口 |
+| Windows 构建 spawn EPERM | 使用允许子进程的本地执行环境，不通过重建项目处理 |
+
+官方依据：[Vite 静态部署](https://vite.dev/guide/static-deploy.html)、[GitHub Pages 自定义工作流](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。
