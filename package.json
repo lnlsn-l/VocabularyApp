@@ -1,7 +1,7 @@
 {
   "name": "vocabulary-app",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +11,14 @@
     "test:e2e": "playwright test",
     "test:pages": "playwright test --config playwright.pages.config.ts",
     "check:dist": "node scripts/check-dist.mjs",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "dev:proxy": "node --env-file-if-exists=proxy/.env.local proxy/local.mjs",
+    "test:proxy": "vitest run proxy",
+    "test:translation": "playwright test --config playwright.translation.config.ts",
+    "test:worker": "node scripts/test-worker.mjs",
+    "proxy:check": "wrangler deploy --config proxy/wrangler.jsonc --dry-run --outdir .tools/proxy-bundle",
+    "check:secrets": "node scripts/check-secret-boundary.mjs",
+    "test:translation:preview": "node scripts/test-translation-preview.mjs"
   },
   "dependencies": {
     "dexie": "^4.4.6",
@@ -32,6 +39,10 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.1",
     "vite": "^8.3.3",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "wrangler": "^4.148.0"
+  },
+  "overrides": {
+    "sharp": "^0.35.5"
   }
 }

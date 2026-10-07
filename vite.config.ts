@@ -7,5 +7,5 @@ export default defineConfig(({ command, isPreview }) => ({
   base: command === 'build' || isPreview ? '/VocabularyApp/' : '/',
   server: { host: 'localhost', port: 5173, strictPort: true },
   preview: { host: 'localhost', port: 5173, strictPort: true },
-  test: { include: ['src/**/*.test.ts'], environment: 'node' },
+  test: { include: ['src/**/*.test.ts', 'proxy/**/*.test.mjs'], environment: 'node' },
 }))

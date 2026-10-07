@@ -6,9 +6,9 @@
 
 当前在线部署版的完整功能、数据隔离、JSON 下载位置、迁移规则、验收结果及后续优化建议见 [在线部署版详细说明报告](docs/stage2-part1-report.md)。
 
-纯前端、本地优先，无登录、后端、云数据库和付费 API。可直接在线使用，也可在本地运行。在线网页资源加载需要网络；词库增删改查不调用远程服务。首次安装本地依赖需要网络。
+本地优先，无登录或云端词库。词库增删改查不调用远程服务；1.2.0 增加可选的“有道翻译参考”，用户主动获取时将显示的查询文本发送到独立代理并转交有道，有道可能按量计费。Pages 仍只提供静态网页。代理未配置/不可用时可手动添加，全部本地功能继续可用。首次安装本地依赖需要网络。
 
-当前应用版本 **1.1.0**，第二阶段第二部分增加备份状态与提醒、导入预览及并发重确认、筛选摘要、连续添加、详情复制与搜索快捷操作。实施记录见 [stage2-part2.md](docs/stage2-part2.md)，最终测试与发布证据见 [stage2-part2-report.md](docs/stage2-part2-report.md)。历史报告仍描述对应旧版本。
+当前工作区应用版本 **1.2.0**，新增/编辑表单支持独立修改查询短语、主动获取有道中文翻译参考、人工采用并修订后保存。**正式代理尚未部署，1.2.0 未完成线上验收/正式发布；在线已发布基线仍为 1.1.0。** 当前说明见 [stage2-part3.md](docs/stage2-part3.md)，部署账户、Secret 与费用一次性交接见 [部署方案](docs/stage2-part3-deployment-plan.md)，实际验证状态见 [阶段报告](docs/stage2-part3-report.md)。1.1.0 的备份提醒、导入预览、连续添加、复制和快捷操作继续保留；历史证据见 [stage2-part2-report.md](docs/stage2-part2-report.md)。
 
 ## 1.1 日常操作
 
@@ -21,6 +21,8 @@
 - **Ctrl + K / ⌘ + K** 聚焦搜索并保留查询。弹窗或其他编辑区域内保持当前输入；中文组合输入与选词结束附近的 Enter 不会提交表单。普通非组合 Enter 保留表单提交，Esc 取消弹窗。
 - 当前筛选标签可单独清除，或“清除全部”；不改变排序。排序说明解释四种规则，0/1 条结果说明无可见排序变化。搜索、状态、字母、排序不跨刷新记忆，默认学习中／全部字母／英文 A–Z。
 
+新增/编辑中的“英文词汇 / 短语”是最终保存字段；“查询词或短语”是本次发送的文本。查询开始跟随英文，主动修改过后保留独立选择；两者变化会使旧候选失效。翻译抵达不会自动填中文或保存。“采用此翻译”只填入释义框，已有不同中文可取消替换；最终需结合论文语境修订再保存。有道通用翻译不保证专业含义、全部义项、词性或例句。没有查询也能手动保存。
+
 ## 在线使用
 
 直接打开 [VocabularyApp 在线网站](https://lnlsn-l.github.io/VocabularyApp/)。**已于 2026-10-07 上线并通过真实 HTTPS 浏览器验收**，无需安装 Node.js 或运行 npm。仓库经用户明确授权由 Private 改为 Public，通过 GitHub Actions 自动部署。完整结果见 [第二阶段第一部分交付报告](docs/stage2-part1.md)。
@@ -31,11 +33,14 @@
 
 词库主数据保存在**当前浏览器的 IndexedDB**，不会自动上传到 GitHub、Pages、Actions 或远程数据库。没有分析、广告或跟踪服务。不同设备、浏览器和 Profile 不会自动同步；共用同一浏览器 Profile 的人也共用此词库。
 
+主动翻译仅上传当前显示的查询文本；不发送个人词库、中文释义、备注、备份、数据库 ID 或查看统计。代理与有道可能获得网络元信息；有道条款允许特定的去标识输入输出处理。候选只在表单内存中，JSON仅保留人工确认的词条。服务端保存短期来源哈希和必要额度计数，不存词库。密钥仅放本机服务端配置/平台Secret，不能发送聊天或使用`VITE_*`存放。许可和实际网络边界见部署方案。
+
 | 内容 | 职责 |
 | --- | --- |
 | GitHub Repository | 保存程序源代码和配置 |
 | GitHub Pages | 通过 HTTPS 提供构建后的 HTML、CSS、JS 和图标 |
 | IndexedDB | 在当前浏览器保存用户自己的词库 |
+| 独立翻译代理 | 可选主动查询、有道签名、共享原子限额；不提供词库同步 |
 | JSON | 由用户主动导出、保管、导入的备份与迁移文件 |
 
 部署工作流只上传 `dist/` 静态资源，发布前检查文件白名单；个人浏览器数据库、`backups/`、测试 Profile 和测试结果不进入部署产物。清理网站数据、删除 Profile 或系统重装等仍可能导致数据丢失，请定期导出 JSON。应用内“数据说明”可随时展开查看。
@@ -72,7 +77,9 @@ npm run build
 npm run preview
 ```
 
-构建输出在 `dist/`，可交给静态服务器或静态托管平台。不要直接双击 `dist/index.html`，应通过 HTTP/HTTPS 打开。此处的 Node.js 仅用于开发、构建和静态预览，不提供业务后端。当前没有 PWA/service worker；远程页面的首次加载仍需网络，本地服务器运行时无需互联网。
+构建输出在 `dist/`，可交给静态服务器或静态托管平台。不要直接双击 `dist/index.html`，应通过 HTTP/HTTPS 打开。Node.js 用于开发、构建、静态预览和可选本地翻译代理；正式代理独立部署。当前没有 PWA/service worker；远程页面首次加载仍需网络。已加载页面的本地词库操作不依赖翻译网络。
+
+本地安全代理配置模板为`proxy/config.example.env`（复制为被忽略的`proxy/.env.local`）；前端公开地址模板为`config.example.env`（复制为`.env.local`）。真实Secret只能在本机填写，按部署方案核对许可与费用后主动启用；分别运行`npm run dev:proxy`和`npm run dev`。默认没有真实翻译配置；无需配置即可用`npm run test:translation`验证合成上游的完整流程。正式Pages禁止回退连接用户电脑localhost。
 
 ## 第一版功能
 
@@ -165,7 +172,7 @@ D:\VocabularyApp
 
 UI → VocabularyService → VocabularyRepository → LocalVocabularyRepository → Dexie → IndexedDB。页面不直接写数据库；未来云端访问可以替换 Repository，保留手动释义和本地存储的独立职责。
 
-运行依赖：React、React DOM、Dexie。开发依赖：TypeScript、Vite、React Vite 插件、相关类型包、ESLint／typescript-eslint／React Hooks 规则／globals、Vitest、fake-indexeddb、Playwright。实际版本以 `package-lock.json` 为准。
+运行依赖：React、React DOM、Dexie。开发依赖：TypeScript、Vite、React Vite 插件、相关类型包、ESLint／typescript-eslint／React Hooks 规则／globals、Vitest、fake-indexeddb、Playwright，以及代理本地打包/模拟验证用Wrangler；客户端不包含代理/模拟器。实际版本以 `package-lock.json` 为准。
 
 ## 验证
 
@@ -176,6 +183,12 @@ npm test
 npm run test:e2e
 npm run check:dist
 npm run test:pages
+npm run test:proxy
+npm run test:worker
+npm run test:translation
+npm run test:translation:preview
+npm run check:secrets
+npm run proxy:check
 ```
 
 端到端测试使用已安装的 Google Chrome（`channel: chrome`），自动启动独立的 `localhost:5173` 开发服务器，执行前请关闭手动启动的同端口服务。测试使用独立浏览器配置文件，不会写入日常词库。详细覆盖与边界见 [docs/verification.md](docs/verification.md)。`test-results/`、截图和测试配置文件均被忽略。
@@ -192,7 +205,7 @@ Remove-Item Env:\VOCABULARY_PREVIEW_TEST
 
 ## 自动部署
 
-`.github/workflows/deploy-pages.yml` 在应用修改推送到 `main` 或手动运行时执行 Node.js 24、`npm ci`、lint、单元测试、开发浏览器测试、生产构建、生产子路径／迁移测试及部署文件检查；全部通过后才上传 `dist/` 并尝试部署。仅 README/docs 的提交不重复部署。`dist/` 始终被 Git 忽略。部署方法、账户限制与故障排查见 [部署文档](docs/deployment.md)。
+`.github/workflows/deploy-pages.yml` 在应用修改推送到 `main` 或手动运行时执行 Node.js24/npm ci、lint、单元/代理测试、Worker实际模拟器、代理dry-run、开发浏览器、受控翻译开发/生产子路径测试、生产构建、Secret隔离、生产迁移和dist检查；全部通过才上传`dist/`。仅README/docs不重复部署。GitHub Actions公开变量`VITE_TRANSLATION_API_BASE_URL`只放真实HTTPS代理根地址；未配置时入口提示不可用。代理不由Pages工作流部署，有道Secret/CloudflareToken不进入工作流。既有发布方法见 [部署文档](docs/deployment.md)，新增代理部署见 [Part3方案](docs/stage2-part3-deployment-plan.md)。本阶段这些CI新增门槛已准备，远端新版本尚未运行。
 
 ## Git 与 GitHub
 
@@ -214,12 +227,12 @@ git push origin main
 
 ## 后续版本
 
-本版不包含登录、注册、后端、云同步、在线词典、翻译／AI API、音标发音、记忆曲线、Anki、PDF、浏览器扩展、原生客户端或 PWA。
+本版不包含登录、注册、云同步、完整在线词典、额外大模型服务、音标发音、记忆曲线、Anki、PDF、浏览器扩展、原生客户端或 PWA。可选通用NMT翻译参考及其独立代理已经本地实现，尚待正式部署验收。
 
 下一版建议依次评估：
 
 1. PWA 与离线应用启动。
 2. 专业领域标签和来源论文记录。
-3. 备份提醒与导入前备份、预览。
-4. 可选在线词典辅助，始终保留手动释义。
+3. 完成本阶段代理部署、实际网络/许可/费用核对与线上验收。
+4. 按实际使用反馈完善翻译辅助，始终保留人工专业释义。
 5. 保留本地优先能力的跨设备同步（需要另行设计账户、隐私和冲突策略）。

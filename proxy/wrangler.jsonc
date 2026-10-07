@@ -1,0 +1,17 @@
+{
+  "name": "vocabularyapp-translation",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-07",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "TRANSLATION_ENABLED": "false",
+    "ALLOWED_ORIGINS": "https://lnlsn-l.github.io",
+    "DAILY_CHAR_LIMIT": "5000",
+    "MONTHLY_CHAR_LIMIT": "100000",
+    "SOURCE_PER_MINUTE": "10"
+  },
+  "durable_objects": { "bindings": [{ "name": "TRANSLATION_QUOTA", "class_name": "TranslationQuota" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TranslationQuota"] }],
+  "observability": { "enabled": false }
+}

@@ -3,6 +3,8 @@ import type { VocabularyEntry, VocabularyInput } from '../types/vocabulary'
 import { errorMessage, VocabularyError } from '../utils/validation'
 import { Modal } from './Modal'
 import { useCompositionGuard } from '../hooks/useCompositionGuard'
+import { useTranslation } from '../hooks/useTranslation'
+import { TranslationReference } from './TranslationReference'
 
 interface Props {
   entry?: VocabularyEntry
@@ -24,6 +26,7 @@ export function WordForm({ entry, initialWord = '', onClose, onSave, onExisting 
   const wordRef = useRef<HTMLInputElement>(null)
   const saving = useRef(false)
   const composition = useCompositionGuard()
+  const translation = useTranslation(entry?.word ?? initialWord)
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (saving.current || composition.blocked()) return
@@ -33,6 +36,7 @@ export function WordForm({ entry, initialWord = '', onClose, onSave, onExisting 
     try {
       await onSave(input)
       if (keepOpen) {
+        translation.reset()
         setInput({ word: '', meaning: '', note: '', status: 'learning' })
         setNotice('已保存，可以继续添加下一条。')
         requestAnimationFrame(() => wordRef.current?.focus())
@@ -48,8 +52,13 @@ export function WordForm({ entry, initialWord = '', onClose, onSave, onExisting 
       onKeyDownCapture={event => { if (event.key === 'Enter' && composition.blocked(event.nativeEvent)) event.preventDefault() }}>
       <fieldset disabled={busy}>
         <label>英文词汇 / 短语 <span className="required">*</span>
-          <input ref={wordRef} autoFocus required value={input.word} placeholder="例如 substrate" onChange={event => setInput({ ...input, word: event.target.value })} />
+          <input ref={wordRef} autoFocus required value={input.word} placeholder="例如 substrate" onChange={event => { translation.changeWord(event.target.value); setInput({ ...input, word: event.target.value }) }} />
         </label>
+        <p className="translation-difference">{translation.query.trim() !== input.word.trim()
+          ? '查询内容与英文词条不同；保存时仍使用英文框中的词条。'
+          : '英文框用于保存词条；查询短语可独立修改，不会改写英文词条。'}</p>
+        <TranslationReference translation={translation} meaning={input.meaning}
+          onAdopt={meaning => setInput(current => ({ ...current, meaning }))} blocked={composition.blocked} />
         <label>中文释义 <span className="required">*</span>
           <textarea required rows={3} value={input.meaning} placeholder="输入在当前文献中的含义" onChange={event => setInput({ ...input, meaning: event.target.value })} />
         </label>
