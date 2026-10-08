@@ -1,6 +1,6 @@
 # Stage 2 Part 3 B：代理部署与真实联调记录
 
-日期：2026-10-08（Asia/Shanghai）。本文件按执行顺序保留关闭部署、用户配置 Secret 与后续真实联调记录。**当前真实云端代理联调已通过，1.2.0 的正式 Pages 发布和线上页面验收仍未进行**。原 [开发交付报告](stage2-part3-report.md) 保留为部署前历史证据。
+日期：2026-10-08（Asia/Shanghai）。本文件按执行顺序保留关闭部署、用户配置 Secret、真实联调与正式发布记录。**1.2.0 已发布 GitHub Pages，正式网页验收通过，注释标签 v1.2.0 已创建并推送。** 原 [开发交付报告](stage2-part3-report.md) 保留为部署前历史证据。
 
 当前状态：两项 Secret 已设置；云端翻译已按新授权开启，限额固定为每日 500 字符、每月 2,000 字符、每来源每自然分钟 10 次，正式 Origin 仅允许 `https://lnlsn-l.github.io`。首次部署的关闭/空 Secret 状态及 version 保留为历史记录，最新版本和证据见文末真实联调记录。
 
@@ -186,4 +186,60 @@ Secret 更新可能产生新的 Worker version，下一次联调需重新记录�
 - GitHub 仓库现有认证有管理/推送权限，默认分支 main；首次检查公开 Actions Variables 为空，远端 tag `v1.2.0` 不存在。
 - 本轮继续使用既有 Free 资源；不执行账户订阅或充值操作，不记录 Secret、Token、真实 IP 或个人备份。
 
-此处先记录发布前证据；下面的发布、正式页面验收和标签记录只能在实际成功后补充。
+以上为发布前证据，实际发布、正式页面验收和标签记录如下。
+
+## 正式发布事实与提交关系
+
+| 项目 | 实际结果 |
+| --- | --- |
+| 正式网页 | https://lnlsn-l.github.io/VocabularyApp/ |
+| 已验收应用提交 | `075ce2be24caa1d2a94581b922dd1be58ba88655`；包含功能实现、授权限额配置及发布前文档，保留原有未提交审阅/背景文档内容 |
+| main 合并 | 从 `4b2d710` 快进到 `075ce2b`，没有冲突、强推或丢弃改动 |
+| 功能分支 CI | [37729786288](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37729786288)，同一提交全部 build 门槛 success，deploy 按分支规则 skipped |
+| main CI / Pages | [37730078973](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37730078973)，head `075ce2b`，build / deploy 均 success；部署完成 2026-10-08 13:02:01 +08:00 |
+| 公开构建变量 | `VITE_TRANSLATION_API_BASE_URL=https://vocabularyapp-translation.vocabulary-app.workers.dev`；通过 `gh variable get` 再次核对，不含路径、口令或 Secret |
+| 实际线上 JS | `/VocabularyApp/assets/index-B3JM4a8o.js`；SHA-256 `7da8c803d1badc3877fa8a03c7d294b37fa61eb6c5e10b9d74c3598cec5ec851` |
+| 实际线上 CSS | `/VocabularyApp/assets/index-fkndreNS.css`；SHA-256 `c8fb41928a4763ff26c37dd81dbbb9da8bb608b9ea16b8741d96749ef1c7862b` |
+| 注释标签 | `v1.2.0`，本地/远端 annotated tag 对象 `b469f63717b4b9aa42a7f8fe52cc12a0c9333a8f`，解引用指向已验收的 `075ce2be24caa1d2a94581b922dd1be58ba88655` |
+| Worker | 保留 `7657201a-a35e-49d2-91d4-ebefeb2358ca`；本轮没有重新部署、改动 Secret 或 DO，仍开启 500 / 2,000 / 10 验收档 |
+
+标签在 main 实际部署成功、正式网页翻译验收及 14 项线上回归全部通过之后才创建；创建前再次核对不存在，不覆盖任何标签。上线结果和当前 README/实施说明由后续独立 `docs: record verified stage 2 part 3 release` 提交归档；该文档提交不改变静态应用代码，Pages 与 tag 都继续对应 `075ce2b`。不会为让 tag 指向报告提交而移动已推送标签。
+
+## 本轮本地与 CI 检查通过
+
+本地重新执行 lint、9 个文件 71 项单元/数据/代理测试、Worker workerd/SQLite 并发与持久化测试、代理 dry-run、使用正式公开地址的生产构建、随机 Secret 哨兵构建检查及 dist 白名单，全部通过。生产静态文件仍只有 index、favicon、JS、CSS，没有代理源码、配置、文档或测试产物。
+
+功能分支和 main CI 均另外执行完整现有门槛：依赖安装、lint、单元、Worker 模拟器、代理 dry-run、开发浏览器、受控翻译开发/生产子路径、正式公开地址构建、Secret 隔离、生产数据/迁移与产物白名单。main 成功后才上传 dist 并部署。CI 使用受控上游，不配置有道 Secret，不把 CI success 当作真实 API 返回的证据。
+
+## 正式网页独立 Profile 验收通过
+
+测试时间：2026-10-08 13:03:25–13:03:33 +08:00；新建独立 Chrome Profile，词库初始为空，个人日常数据未访问。真实页面加载的 JS/CSS 内容与上述本地已检查生产产物 SHA-256 完全一致。13 项翻译/保存/隔离断言通过：
+
+| 检查 | 实际结果 |
+| --- | --- |
+| 正式翻译入口 | 添加词条表单显示“有道翻译参考”、独立查询短语和“获取翻译参考”；规范地址另外验证键入不调用代理 |
+| `silicon substrate` | 真实 POST 正式 Worker，HTTP 200，`source=youdao`，返回“硅衬底”，耗时约 1,654 ms；英文仍可保存 `substrate` |
+| `bias voltage` | 真实 POST 正式 Worker，HTTP 200，`source=youdao`，返回“偏置电压”，耗时约 604 ms；英文仍可保存 `bias` |
+| 跨域和请求模型 | CORS 精确允许 `https://lnlsn-l.github.io`；实际两个 payload 都仅含 query，没有中文、备注、词库或凭据 |
+| 采用/修订/保存 | 返回不填中文；采用只填输入。已有中文替换可取消并保留输入，确认后可人工修订。英文和备注不改变，每次最终保存才增加一次 dataRevision/contentRevision |
+| 结果失效 | 修改查询清除候选，不新增上游请求，不清空已修订中文 |
+| 失败时手动录词 | 在该独立 Profile 精确拦截一次代理请求并返回受控 503/not_configured；显示不可用提示，保留中文和备注，继续人工修订保存成功。未关闭公网服务，未制造真实有道故障或额外调用上游 |
+| JSON 往返 | 两条修订词条及一条手填故障词条合计 3 条；version 1 导出后在第二个独立 Profile 导入，所有词条字段完全一致，没有查询候选或服务端配置 |
+| 密钥隔离 | 实际 JS/CSS 不含服务端 Secret 字段、Token/私钥模式且与通过随机哨兵检查的产物一致；浏览器真实业务请求只有 Worker query，没有直连有道或认证值，合成 JSON 不含候选/Secret。未读取真实 Secret 做值比对 |
+
+新增真实有道请求严格为 **2 次、29 字符**；尝试在发送前写入忽略的本地账本，禁止自动重试或重复执行。这是本轮预留字符量；此前本地真实联调另有 29 字符，没有清空历史累计，也不能把两轮合计 58 字符当作整个公共账户账单。第三个网页 fetch 只在独立 Profile 内被受控 503 截获，新增上游调用为 0。
+
+专用翻译验收脚本的起始页面地址多了一个尾部斜杠，实际为 `/VocabularyApp//`，同一正式 Origin 和相同已发布产物。没有隐瞒或用 localhost 代替线上；随后从规范 `/VocabularyApp/` 地址补查入口和输入行为（13:05:01），没有重复计费查询。下述完整 14 项回归也全部使用规范正式地址。临时脚本已修正该地址，现有账本仍防止重复真实调用。
+
+已有 `VOCABULARY_PAGES_URL=https://lnlsn-l.github.io/VocabularyApp/ npm run test:pages` **14 项线上回归全部通过（34.7 秒）**，覆盖生产子路径资源、无主动第三方请求、CRUD/搜索/筛选/排序、1440/360 布局、刷新/重开浏览器/Profile 隔离、localhost↔线上 JSON 双向迁移、重复与非法导入、备份状态、多标签页、连续录词、取消只读、下载失败、旧 v1→v2 数据迁移及保留其他应用存储。
+
+仅受控 503 产生预期资源错误，除此之外正式翻译页面控制台和运行时错误为 0；不放开所有第三方请求或忽略全部错误。已直接检查正式翻译表单和保存后的截图。截图、合成备份、Profile、网络 JSON 和账本均留在忽略的测试目录，不进入 Git 或 Pages。
+
+## 最终交付及未覆盖范围
+
+- **本地/CI 通过**：实现、原数据保护、共享额度、受控故障、生产构建、Secret 隔离及静态部署检查。
+- **线上通过**：真实 Pages 发布、翻译入口、两条实际有道请求、人工采用修订保存、受控不可用时手填、JSON 往返及 14 项规范 URL 回归；正式注释 tag 已推送。
+- **保持不变**：500 字符/日、2,000 字符/月、每来源每 UTC 自然分钟 10 次，原 DO/累计额度与浏览器 schema 2/JSON version 1；未充值、提高额度、升级 Paid 或访问日常词库。
+- **仍未覆盖**：真实手机/其他网络/用户日常 Profile 与物理 IME；此前命令行到 workers.dev 的证书路径异常仍未排查；未独立读取账户余额/账单、官方许可工单或线上 SQL 累计值，未大量真实调用触发超限/欠费/超时。账户事项由用户明确核对确认，受控错误与真实返回的证据分开记录。
+
+正式发布范围已完成，没有阻塞项需要继续阻止本次交付。上述未覆盖范围保留为实际边界，不宣称全网、全设备或专业翻译准确率保证。

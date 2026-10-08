@@ -8,7 +8,7 @@
 
 本地优先，无登录或云端词库。词库增删改查不调用远程服务；1.2.0 增加可选的“有道翻译参考”，用户主动获取时将显示的查询文本发送到独立代理并转交有道，有道可能按量计费。Pages 仍只提供静态网页。代理未配置/不可用时可手动添加，全部本地功能继续可用。首次安装本地依赖需要网络。
 
-当前工作区应用版本 **1.2.0**，新增/编辑表单支持独立修改查询短语、主动获取有道中文翻译参考、人工采用并修订后保存。**正式 Cloudflare 代理已部署，本地新版表单到真实有道的两条查询及人工保存验证通过；1.2.0 未发布新版 Pages，在线已发布基线仍为 1.1.0，页面还没有翻译入口。** 代理现按用户授权保持开启：每日 500 字符、每月 2,000 字符、每来源每自然分钟 10 次，仅允许正式 Pages Origin；配置以 `proxy/wrangler.jsonc` 为准。当前说明见 [stage2-part3.md](docs/stage2-part3.md)，实际版本、网络边界和剩余验收见 [上线与真实联调报告](docs/stage2-part3-launch-report.md)，部署前历史证据见 [阶段报告](docs/stage2-part3-report.md)。1.1.0 的备份提醒、导入预览、连续添加、复制和快捷操作继续保留；历史证据见 [stage2-part2-report.md](docs/stage2-part2-report.md)。
+当前正式版本 **1.2.0**，已发布到 [GitHub Pages](https://lnlsn-l.github.io/VocabularyApp/)，注释标签 `v1.2.0` 指向实际验收应用提交 `075ce2b`。新增/编辑表单中的“有道翻译参考”支持独立查询短语、真实中文候选、人工采用修订后保存；正式网页翻译、故障时手填、JSON 往返和 14 项线上回归通过。代理按用户授权保持开启：每日 500 字符、每月 2,000 字符、每来源每 UTC 自然分钟 10 次，仅允许正式 Pages Origin，配置以 `proxy/wrangler.jsonc` 为准。当前实现见 [stage2-part3.md](docs/stage2-part3.md)，实际部署/验收/未覆盖范围见 [上线报告](docs/stage2-part3-launch-report.md)，部署前历史证据见 [阶段报告](docs/stage2-part3-report.md)。备份提醒、导入预览、连续添加、复制和快捷操作继续保留。
 
 ## 1.1 日常操作
 
@@ -205,7 +205,7 @@ Remove-Item Env:\VOCABULARY_PREVIEW_TEST
 
 ## 自动部署
 
-`.github/workflows/deploy-pages.yml` 在应用修改推送到 `main` 或`codex/**`、或手动运行时执行 Node.js24/npm ci、lint、单元/代理测试、Worker实际模拟器、代理dry-run、开发浏览器、受控翻译开发/生产子路径测试、生产构建、Secret隔离、生产迁移和dist检查；只有main全部通过才上传`dist/`并部署。功能分支只验证，README/docs不重复执行。GitHub Actions公开变量`VITE_TRANSLATION_API_BASE_URL`只放真实HTTPS代理根地址；未配置时入口提示不可用。代理不由Pages工作流部署，有道Secret/CloudflareToken不进入工作流。既有发布方法见 [部署文档](docs/deployment.md)，新增代理部署见 [Part3方案](docs/stage2-part3-deployment-plan.md)。本阶段实现提交已通过 [CI 37639627358](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37639627358)，Pages上传/deploy按分支门槛跳过；正式线上接入仍未验收。
+`.github/workflows/deploy-pages.yml` 在应用修改推送到 `main` 或`codex/**`、或手动运行时执行 Node.js24/npm ci、lint、单元/代理测试、Worker实际模拟器、代理dry-run、开发浏览器、受控翻译开发/生产子路径测试、生产构建、Secret隔离、生产迁移和dist检查；只有main全部通过才上传`dist/`并部署。功能分支只验证，README/docs不重复执行。GitHub Actions公开变量`VITE_TRANSLATION_API_BASE_URL`只放真实HTTPS代理根地址；未配置时入口提示不可用。代理不由Pages工作流部署，有道Secret/CloudflareToken不进入工作流。最新 [main CI 37730078973](https://github.com/lnlsn-l/VocabularyApp/actions/runs/37730078973) build/deploy均成功，实际网页验收记录见 [上线报告](docs/stage2-part3-launch-report.md)。既有发布方法见 [部署文档](docs/deployment.md)，代理的历史准备方案见 [Part3方案](docs/stage2-part3-deployment-plan.md)。
 
 ## Git 与 GitHub
 
@@ -227,12 +227,12 @@ git push origin main
 
 ## 后续版本
 
-本版不包含登录、注册、云同步、完整在线词典、额外大模型服务、音标发音、记忆曲线、Anki、PDF、浏览器扩展、原生客户端或 PWA。可选通用NMT翻译参考及其独立代理已通过小额度真实联调，尚待新版 Pages 发布授权和实际线上页面验收。
+本版不包含登录、注册、云同步、完整在线词典、额外大模型服务、音标发音、记忆曲线、Anki、PDF、浏览器扩展、原生客户端或 PWA。可选通用NMT翻译参考及独立代理已正式发布并通过线上验收；专业含义仍需用户结合语境人工修订。
 
 下一版建议依次评估：
 
 1. PWA 与离线应用启动。
 2. 专业领域标签和来源论文记录。
-3. 完成剩余网络/账户核对，获得新版 Pages 发布授权后完成实际线上页面验收；保留已授权验收档，不自动提高限额。
+3. 补充实际手机/其他网络体验验证并处理已记录的网络路径差异；保留已授权验收档，不自动提高限额。
 4. 按实际使用反馈完善翻译辅助，始终保留人工专业释义。
 5. 保留本地优先能力的跨设备同步（需要另行设计账户、隐私和冲突策略）。

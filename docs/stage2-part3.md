@@ -1,6 +1,6 @@
 # Stage 2 Part 3 实施说明
 
-日期：2026-10-07。package与锁文件为1.2.0，本地功能实现；正式代理尚未部署，线上未验收。开发规范为 [工作提示词](VocabularyApp-Stage2-Part3-Work-Prompt.md)，部署与费用交接见 [部署方案](stage2-part3-deployment-plan.md)，实际测试/提交状态见 [报告](stage2-part3-report.md)。
+更新日期：2026-10-08。package与锁文件为1.2.0，正式代理及 GitHub Pages 已发布，独立 Profile 线上验收通过，注释标签 v1.2.0 指向验收提交075ce2b。开发规范为 [工作提示词](VocabularyApp-Stage2-Part3-Work-Prompt.md)，部署前方案见 [部署方案](stage2-part3-deployment-plan.md)，最新部署、授权限额和实际验收边界见 [上线报告](stage2-part3-launch-report.md)，本地实现历史见 [报告](stage2-part3-report.md)。
 
 ## 用户流程与实现
 
@@ -36,7 +36,7 @@ TranslationReference以React纯文本展示真实 translation 数组，每条一
 | 请求体 | UTF-8流式最多4KiB；Content-Length和实际流均检查，坏JSON/UTF-8拒绝 |
 | 上游/客户端响应 | 200KiB字节上限，检查实际流；最多20项，不透传其他字段 |
 | 超时 | 总代理12秒，上游10秒，客户端15秒；body等待/额度等待也有取消保护 |
-| 日/月总量 | 建议5,000/100,000字符，全站共用，UTC自然日/月重置；配置未授权真实消费 |
+| 日/月总量 | 用户已授权500/2,000字符，全站共用，UTC自然日/月重置；北京时间日切换为08:00，不清空累计以恢复额度 |
 | 短时来源 | UTC自然分钟每来源10次；分钟边界非滑动窗口 |
 | 额度策略 | 调上游前原子预留；成功、失败、超时、预留后取消不返还，不自动重试 |
 
@@ -76,4 +76,4 @@ npm run test:pages
 
 test:worker实际运行锁定Wrangler的workerd模拟器，固定出站拦截、不使用真实Secret，30并发/重启计数；与纯Node SQLite算法测试互补。check:secrets随机生成服务端哨兵，验证生产构建、输出和Git跟踪文件。生产翻译脚本在finally重建正常dist，避免测试8788地址成为交付产物。CI纳入上述核心/代理/runtime/翻译受控门槛，仍仅上传dist，最小Pages权限不变；CI无真实有道密钥。
 
-测试覆盖/结果以报告实际运行证据为准。物理中文输入法、真实手机软键盘、实际Worker公网和有道计费链路需另外验证；历史两轮来源评估不重做，不宣称专业准确率。
+测试覆盖/结果以报告实际运行证据为准。正式Worker公网、有道真实返回与Pages人工保存流程已验证；物理中文输入法、真实手机和其他网络未覆盖，不把现有证据写成全设备保证。历史两轮来源评估不重做，不宣称专业准确率。
