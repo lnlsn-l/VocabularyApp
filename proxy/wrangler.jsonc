@@ -5,10 +5,10 @@
   "workers_dev": true,
   "preview_urls": false,
   "vars": {
-    "TRANSLATION_ENABLED": "false",
+    "TRANSLATION_ENABLED": "true",
     "ALLOWED_ORIGINS": "https://lnlsn-l.github.io",
-    "DAILY_CHAR_LIMIT": "5000",
-    "MONTHLY_CHAR_LIMIT": "100000",
+    "DAILY_CHAR_LIMIT": "500",
+    "MONTHLY_CHAR_LIMIT": "2000",
     "SOURCE_PER_MINUTE": "10"
   },
   "durable_objects": { "bindings": [{ "name": "TRANSLATION_QUOTA", "class_name": "TranslationQuota" }] },
